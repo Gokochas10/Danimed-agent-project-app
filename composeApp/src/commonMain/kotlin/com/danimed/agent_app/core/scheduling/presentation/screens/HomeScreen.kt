@@ -38,6 +38,31 @@ import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
 import com.danimed.agent_app.shared.utils.SetStatusBarColor
+import androidx.compose.foundation.Image
+import agent_app.composeapp.generated.resources.Res
+import agent_app.composeapp.generated.resources.doctor_icon
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.text.style.TextAlign
+import org.jetbrains.compose.resources.painterResource
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import compose.icons.FeatherIcons
+import compose.icons.feathericons.Activity
+import compose.icons.feathericons.Calendar
+import compose.icons.feathericons.Circle
+import compose.icons.feathericons.Clock
+import compose.icons.feathericons.Edit
+import compose.icons.feathericons.Filter
+import compose.icons.feathericons.Info
+import compose.icons.feathericons.MapPin
+import compose.icons.feathericons.User
 
 data class AgendaItem(
     val id: String,
@@ -54,21 +79,51 @@ fun HomeScreen(
     currentNavItem: BottomNavItem = BottomNavItem.Agenda,
     onNavItemClick: (BottomNavItem) -> Unit = {}
 ) {
+    when (currentNavItem) {
+        BottomNavItem.Calendar -> {
+            CalendarScreen(
+                currentNavItem = currentNavItem,
+                onNavItemClick = onNavItemClick
+            )
+        }
+        else -> {
+            AgendaScreen(
+                currentNavItem = currentNavItem,
+                onNavItemClick = onNavItemClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun AgendaScreen(
+    currentNavItem: BottomNavItem = BottomNavItem.Agenda,
+    onNavItemClick: (BottomNavItem) -> Unit = {}
+) {
     SetStatusBarColor(PrimaryBlue)
     
     val agendaItems = listOf(
         AgendaItem(
             id = "1",
-            title = "Product Demo 1",
-            duration = "30 MIN",
-            time = "9:30am - 10:00am",
+            title = "Juan Jose Fiallos",
+            duration = "60 MIN",
+            time = "9:30am - 10:30am",
             colorIndicator = Color(0xFF4FC3F7),
             startTime = "9:30am",
             endTime = "10:00am"
         ),
         AgendaItem(
             id = "2",
-            title = "Product Demo 2",
+            title = "Silvana Diaz",
+            duration = "60 MIN",
+            time = "9:30am - 10:00am",
+            colorIndicator = Color(0xFFFFEB3B),
+            startTime = "9:30am",
+            endTime = "10:00am"
+        ),
+         AgendaItem(
+            id = "2",
+            title = "Matias Gamboa",
             duration = "30 MIN",
             time = "9:30am - 10:00am",
             colorIndicator = Color(0xFFFFEB3B),
@@ -77,16 +132,7 @@ fun HomeScreen(
         ),
          AgendaItem(
             id = "2",
-            title = "Product Demo 2",
-            duration = "30 MIN",
-            time = "9:30am - 10:00am",
-            colorIndicator = Color(0xFFFFEB3B),
-            startTime = "9:30am",
-            endTime = "10:00am"
-        ),
-         AgendaItem(
-            id = "2",
-            title = "Product Demo 2",
+            title = "Lenin Herrera",
             duration = "30 MIN",
             time = "9:30am - 10:00am",
             colorIndicator = Color(0xFFFFEB3B),
@@ -158,21 +204,14 @@ private fun TopBar() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Today's agenda",
-            fontSize = 20.sp,
+            text = "Lunes, 24 de Diciembre de 2025",
+            fontSize = 15.sp,
             fontFamily = InterFontFamily(),
             fontWeight = FontWeight.Bold,
-            color = White
+            color = White,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
         )
-        
-        IconButton(onClick = {}) {
-            Text(
-                text = "+",
-                fontSize = 24.sp,
-                color = White,
-                fontWeight = FontWeight.Bold
-            )
-        }
     }
 }
 
@@ -183,24 +222,58 @@ private fun ProfileSection() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF2196F3))
-        )
-        
-        Spacer(modifier = Modifier.size(12.dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(Res.drawable.doctor_icon),
+                contentDescription = null,
+                modifier = Modifier.size(35.dp)
+            )
+            Text(
+                text = "1805263782",
+                fontSize = 8.sp,
+                fontFamily = InterFontFamily(),
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = White
+            )
+        }
         
         Text(
-            text = "Greta's schedule",
-            fontSize = 16.sp,
+            text = "Horario de Joshua",
+            fontSize = 18.sp,
             fontFamily = InterFontFamily(),
-            fontWeight = FontWeight.Medium,
-            color = White
+            fontWeight = FontWeight.ExtraBold,
+            color = White,
         )
+
+        Button(
+            onClick = { /* Acción del botón */ },
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier
+                .wrapContentSize()
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    painter = rememberVectorPainter(image = FeatherIcons.Filter),
+                    contentDescription = "Filtrar",
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Filtrar",
+                    fontSize = 10.sp,
+                    fontFamily = InterFontFamily(),
+                    fontWeight = FontWeight.Bold,
+                    color = androidx.compose.ui.graphics.Color.White,
+
+                )
+            }
+        }
     }
 }
 
@@ -210,7 +283,7 @@ private fun AgendaCard(item: AgendaItem) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF2C2C2C)
+            containerColor = Color(0xFFEFF4FF)
         )
     ) {
         Column(
@@ -223,21 +296,52 @@ private fun AgendaCard(item: AgendaItem) {
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = item.duration,
-                    fontSize = 12.sp,
-                    fontFamily = InterFontFamily(),
-                    color = Color(0xFFB0B0B0)
+
+                Icon(
+                    painter = rememberVectorPainter(image = FeatherIcons.Activity),
+                    contentDescription = "Estado",
+                    tint = SplashBackground,
+                    modifier = Modifier.size(20.dp)
                 )
-                
-                IconButton(
-                    onClick = {},
-                    modifier = Modifier.size(24.dp)
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = rememberVectorPainter(image = FeatherIcons.Clock),
+                            contentDescription = "Tiempo",
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
                     Text(
-                        text = "⚙",
-                        fontSize = 18.sp,
-                        color = Color(0xFFB0B0B0)
+                        text = item.duration,
+                        fontSize = 12.sp,
+                        fontFamily = InterFontFamily(),
+                        color = Color(0xFF4CAF50),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Button(
+                    onClick = { /* Acción */ },
+                    contentPadding = PaddingValues(0.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(image = FeatherIcons.Edit),
+                        contentDescription = "Estado",
+                        tint = SplashBackground,
+                        modifier = Modifier.size(30.dp)
                     )
                 }
             }
@@ -247,11 +351,11 @@ private fun AgendaCard(item: AgendaItem) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(item.colorIndicator)
+                Icon(
+                    painter = rememberVectorPainter(image = FeatherIcons.User),
+                    contentDescription = "Paciente",
+                    tint = SplashBackground,
+                    modifier = Modifier.size(16.dp)
                 )
                 
                 Spacer(modifier = Modifier.size(8.dp))
@@ -261,39 +365,55 @@ private fun AgendaCard(item: AgendaItem) {
                     fontSize = 18.sp,
                     fontFamily = InterFontFamily(),
                     fontWeight = FontWeight.Bold,
-                    color = White
+                    color = SplashBackground
                 )
             }
             
             Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = item.time,
-                fontSize = 14.sp,
-                fontFamily = InterFontFamily(),
-                color = Color(0xFFB0B0B0)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ActionButton(
-                    text = "View booking",
-                    icon = "▼",
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
+                Icon(
+                    painter = rememberVectorPainter(image = FeatherIcons.Calendar),
+                    contentDescription = "Horario",
+                    tint = SplashBackground,
+                    modifier = Modifier.size(16.dp)
                 )
-                
-                ActionButton(
-                    text = "Share booking",
-                    icon = "📤",
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
+
+                Spacer(modifier = Modifier.size(8.dp))
+
+                Text(
+                    text = item.time,
+                    fontSize = 14.sp,
+                    fontFamily = InterFontFamily(),
+                    color = SplashBackground
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = rememberVectorPainter(image = FeatherIcons.Info),
+                    contentDescription = "Estado",
+                    tint = Color(0xFFF44336),
+                    modifier = Modifier.size(16.dp)
+                )
+
+                Spacer(modifier = Modifier.size(8.dp))
+
+                Text(
+                    text = "Cancelada",
+                    fontSize = 14.sp,
+                    fontFamily = InterFontFamily(),
+                    color = Color(0xFFF44336)
+                )
+            }
+
+
         }
     }
 }

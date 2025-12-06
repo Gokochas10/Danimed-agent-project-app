@@ -34,9 +34,9 @@ sealed class BottomNavItem(
     val label: String,
     val icon: ImageVector
 ) {
-    object Agenda : BottomNavItem("Agenda", FeatherIcons.CheckSquare)
-    object Calendar : BottomNavItem("Calendar", FeatherIcons.Calendar)
-    object Settings : BottomNavItem("Settings", FeatherIcons.Settings)
+    object Agenda : BottomNavItem("Hoy", FeatherIcons.CheckSquare)
+    object Calendar : BottomNavItem("Calendario", FeatherIcons.Calendar)
+    object Schedule : BottomNavItem("Mi Horario", FeatherIcons.Settings)
 }
 
 @Composable
@@ -48,7 +48,7 @@ fun BottomNavBar(
     val items = listOf(
         BottomNavItem.Agenda,
         BottomNavItem.Calendar,
-        BottomNavItem.Settings
+        BottomNavItem.Schedule
     )
 
     Row(
