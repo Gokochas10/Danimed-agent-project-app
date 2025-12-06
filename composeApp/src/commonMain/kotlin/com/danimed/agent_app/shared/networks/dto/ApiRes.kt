@@ -9,3 +9,4 @@ data class ApiRes<T>(
     val data: T? = null
 )
 
+

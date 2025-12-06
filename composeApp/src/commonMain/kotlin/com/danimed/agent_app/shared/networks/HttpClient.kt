@@ -1,9 +1,21 @@
 package com.danimed.agent_app.shared.networks
 
+import com.danimed.agent_app.shared.navigation.AuthRedirectHandler
+import com.danimed.agent_app.shared.utils.TokenManagerProvider
 import io.ktor.client.HttpClient
+import io.ktor.client.call.HttpClientCall
+import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpCallValidator
+import io.ktor.client.request.HttpRequestPipeline
+import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.headers
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -19,6 +31,28 @@ fun createHttpClient(): HttpClient {
 
         install(Logging) {
             level = LogLevel.ALL
+        }
+        
+        install(HttpCallValidator) {
+            validateResponse { response ->
+                if (response.status == HttpStatusCode.Unauthorized) {
+                    val tokenManager = TokenManagerProvider.getTokenManager()
+                    tokenManager.clearToken()
+                    AuthRedirectHandler.notifyUnauthorized()
+                }
+            }
+        }
+    }.apply {
+        requestPipeline.intercept(HttpRequestPipeline.Transform) {
+            val url = context.url.toString()
+            val isAuthEndpoint = url.contains("/auth/login") || url.contains("/auth/register")
+            
+            if (!isAuthEndpoint) {
+                val token = TokenManagerProvider.getTokenManager().getToken()
+                if (token != null && !context.headers.contains(HttpHeaders.Authorization)) {
+                    context.headers[HttpHeaders.Authorization] = "Bearer $token"
+                }
+            }
         }
     }
 }
