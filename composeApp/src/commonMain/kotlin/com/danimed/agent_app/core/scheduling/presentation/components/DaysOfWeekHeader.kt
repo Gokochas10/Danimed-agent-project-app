@@ -12,7 +12,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.danimed.agent_app.shared.theme.InterFontFamily
-import com.danimed.agent_app.shared.theme.SplashBackground
 
 @Composable
 fun DaysOfWeekHeader(
@@ -29,7 +28,7 @@ fun DaysOfWeekHeader(
                 text = day,
                 fontSize = 12.sp,
                 fontFamily = InterFontFamily(),
-                color = SplashBackground,
+                color = Color(0xFFB0B0B0),
                 modifier = Modifier.width(32.dp),
                 textAlign = TextAlign.Center
             )

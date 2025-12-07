@@ -12,7 +12,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.danimed.agent_app.core.scheduling.presentation.utils.DateFormatter
 import com.danimed.agent_app.shared.theme.InterFontFamily
-import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
@@ -34,7 +33,7 @@ fun MonthHeader(
             fontSize = 16.sp,
             fontFamily = InterFontFamily(),
             fontWeight = FontWeight.Bold,
-            color = SplashBackground
+            color = White
         )
         
         Row {
@@ -42,7 +41,7 @@ fun MonthHeader(
                 Text(
                     text = "<",
                     fontSize = 16.sp,
-                    color = SplashBackground,
+                    color = White,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -51,7 +50,7 @@ fun MonthHeader(
                 Text(
                     text = ">",
                     fontSize = 16.sp,
-                    color = SplashBackground,
+                    color = White,
                     fontWeight = FontWeight.Bold
                 )
             }

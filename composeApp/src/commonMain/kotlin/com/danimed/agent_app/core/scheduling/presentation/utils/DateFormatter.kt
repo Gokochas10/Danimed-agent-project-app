@@ -20,6 +20,31 @@ object DateFormatter {
         Month.DECEMBER to "December"
     )
     
+    private val monthNamesSpanish = mapOf(
+        Month.JANUARY to "Enero",
+        Month.FEBRUARY to "Febrero",
+        Month.MARCH to "Marzo",
+        Month.APRIL to "Abril",
+        Month.MAY to "Mayo",
+        Month.JUNE to "Junio",
+        Month.JULY to "Julio",
+        Month.AUGUST to "Agosto",
+        Month.SEPTEMBER to "Septiembre",
+        Month.OCTOBER to "Octubre",
+        Month.NOVEMBER to "Noviembre",
+        Month.DECEMBER to "Diciembre"
+    )
+    
+    private val dayNamesSpanish = mapOf(
+        DayOfWeek.MONDAY to "Lunes",
+        DayOfWeek.TUESDAY to "Martes",
+        DayOfWeek.WEDNESDAY to "Miércoles",
+        DayOfWeek.THURSDAY to "Jueves",
+        DayOfWeek.FRIDAY to "Viernes",
+        DayOfWeek.SATURDAY to "Sábado",
+        DayOfWeek.SUNDAY to "Domingo"
+    )
+    
     private val dayNames = mapOf(
         DayOfWeek.MONDAY to "Mon",
         DayOfWeek.TUESDAY to "Tue",
@@ -42,6 +67,14 @@ object DateFormatter {
     
     fun formatDayOfWeek(dayOfWeek: DayOfWeek): String {
         return dayNames[dayOfWeek] ?: ""
+    }
+    
+    fun formatDayOfWeekSpanish(dayOfWeek: DayOfWeek): String {
+        return dayNamesSpanish[dayOfWeek] ?: ""
+    }
+    
+    fun formatMonthSpanish(month: Month): String {
+        return monthNamesSpanish[month] ?: ""
     }
     
     fun getPreviousMonth(month: Month, year: Int): LocalDate {

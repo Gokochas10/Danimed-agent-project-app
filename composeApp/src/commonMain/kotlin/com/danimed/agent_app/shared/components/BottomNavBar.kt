@@ -1,5 +1,8 @@
 package com.danimed.agent_app.shared.components
 
+import agent_app.composeapp.generated.resources.Res
+import agent_app.composeapp.generated.resources.doctor_icon
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,14 +33,22 @@ import compose.icons.feathericons.Settings
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource as resPainterResource
+
+// Clase sellada para manejar tanto iconos como imágenes
+sealed class NavIcon {
+    data class Vector(val imageVector: ImageVector) : NavIcon()
+    data class DrawableRes(val resource: DrawableResource) : NavIcon()
+}
 
 sealed class BottomNavItem(
     val label: String,
-    val icon: ImageVector
+    val icon: NavIcon
 ) {
-    object Agenda : BottomNavItem("Hoy", FeatherIcons.CheckSquare)
-    object Calendar : BottomNavItem("Calendario", FeatherIcons.Calendar)
-    object Schedule : BottomNavItem("Mi Horario", FeatherIcons.Settings)
+    object Agenda : BottomNavItem("Agenda", NavIcon.Vector(FeatherIcons.CheckSquare))
+    object Calendar : BottomNavItem("Calendario", NavIcon.Vector(FeatherIcons.Calendar))
+    object Schedule : BottomNavItem("Mi Perfil", NavIcon.DrawableRes(Res.drawable.doctor_icon))
 }
 
 @Composable
@@ -54,7 +66,7 @@ fun BottomNavBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(95.dp)
+            .height(80.dp)
             .background(SplashBackground)
             .navigationBarsPadding()
             .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -91,12 +103,26 @@ private fun BottomNavItem(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.label,
-                modifier = Modifier.size(24.dp),
-                tint = color
-            )
+            // Renderizar según el tipo de icono
+            when (val navIcon = item.icon) {
+                is NavIcon.Vector -> {
+                    Icon(
+                        imageVector = navIcon.imageVector,
+                        contentDescription = item.label,
+                        modifier = Modifier.size(24.dp),
+                        tint = color
+                    )
+                }
+                is NavIcon.DrawableRes -> {
+                    Image(
+                        painter = resPainterResource(navIcon.resource),
+                        contentDescription = item.label,
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(color)
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = item.label,
@@ -108,4 +134,3 @@ private fun BottomNavItem(
         }
     }
 }
-
