@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.danimed.agent_app.core.auth.domain.usecase.LoginUseCase
+import com.danimed.agent_app.shared.networks.NetworkError
 import kotlinx.coroutines.launch
 
 data class LoginUiState(
@@ -31,9 +32,11 @@ class LoginViewModel(
                     onSuccess(token)
                 }
                 .onFailure { exception ->
+                    // No mostrar errores de conexión aquí, la pantalla de NoInternetScreen se encarga
+                    val isNetworkError = exception is com.danimed.agent_app.shared.networks.NetworkError.NoConnection
                     uiState = uiState.copy(
                         isLoading = false,
-                        error = exception.message ?: "Error al iniciar sesión",
+                        error = if (isNetworkError) null else (exception.message ?: "Error al iniciar sesión"),
                         isSuccess = false,
                         token = null
                     )

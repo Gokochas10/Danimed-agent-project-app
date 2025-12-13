@@ -35,11 +35,52 @@ fun createHttpClient(): HttpClient {
         
         install(HttpCallValidator) {
             validateResponse { response ->
-                if (response.status == HttpStatusCode.Unauthorized) {
-                    val tokenManager = TokenManagerProvider.getTokenManager()
-                    tokenManager.clearToken()
-                    AuthRedirectHandler.notifyUnauthorized()
+                when {
+                    response.status == HttpStatusCode.Unauthorized -> {
+                        val tokenManager = TokenManagerProvider.getTokenManager()
+                        tokenManager.clearToken()
+                        AuthRedirectHandler.notifyUnauthorized()
+                    }
+                    response.status.value >= 500 -> {
+                        // Error del servidor (servidor caído, error interno)
+                        NetworkErrorHandler.handleNetworkError(
+                            NetworkError.ServerError(
+                                response.status.value,
+                                "Error del servidor: ${response.status}"
+                            )
+                        )
+                    }
+                    response.status.value in 400..499 && response.status != HttpStatusCode.Unauthorized -> {
+                        // Errores del cliente (URL incorrecta, recurso no encontrado, etc.)
+                        // Estos son errores de servidor/configuración, no falta de internet
+                        NetworkErrorHandler.handleNetworkError(
+                            NetworkError.ServerError(
+                                response.status.value,
+                                "Error en la petición: ${response.status}"
+                            )
+                        )
+                    }
                 }
+            }
+            
+            // Manejar excepciones de respuesta (errores de conexión, timeouts, etc.)
+            handleResponseException { cause ->
+                // Convertir la excepción a NetworkError y manejarla
+                val networkError = cause.toNetworkError()
+                when (networkError) {
+                    is NetworkError.NoConnection -> {
+                        // Error de conexión (no hay internet)
+                        NetworkErrorHandler.handleNetworkError(networkError)
+                    }
+                    is NetworkError.ServerError -> {
+                        // Error de servidor que no fue capturado por validateResponse
+                        NetworkErrorHandler.handleNetworkError(networkError)
+                    }
+                    else -> {
+                        // Otros errores no se manejan aquí
+                    }
+                }
+                // No relanzar la excepción aquí - se maneja en el código que hace la llamada
             }
         }
     }.apply {
