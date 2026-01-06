@@ -14,7 +14,6 @@ import com.danimed.agent_app.core.auth.presentation.screens.SplashScreen
 import com.danimed.agent_app.core.scheduling.presentation.screens.HomeScreen
 import com.danimed.agent_app.shared.components.BottomNavItem
 import com.danimed.agent_app.shared.components.NoInternetScreen
-import com.danimed.agent_app.shared.components.VideoPreloader
 import com.danimed.agent_app.shared.networks.NetworkErrorHandler
 import com.danimed.agent_app.shared.navigation.AuthRedirectHandler
 import com.danimed.agent_app.shared.theme.AppTheme

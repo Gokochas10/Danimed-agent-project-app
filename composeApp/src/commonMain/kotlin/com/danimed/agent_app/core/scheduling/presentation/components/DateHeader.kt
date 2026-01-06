@@ -22,10 +22,8 @@ import com.danimed.agent_app.core.scheduling.presentation.utils.DateFormatter
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
-import kotlinx.datetime.Clock
+import com.danimed.agent_app.shared.utils.currentLocalDate
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 
 @Composable
 fun DateHeader(
@@ -33,7 +31,7 @@ fun DateHeader(
     onDateClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val today = currentLocalDate()
     val isToday = date == today
 
     val dayName = DateFormatter.formatDayOfWeekSpanish(date.dayOfWeek)

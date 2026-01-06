@@ -45,11 +45,9 @@ import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
 import com.danimed.agent_app.shared.utils.SetStatusBarColor
+import com.danimed.agent_app.shared.utils.currentLocalDate
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 
 data class AgendaItem(
     val id: String,
@@ -80,7 +78,7 @@ private fun AgendaScreen(
 ) {
     SetStatusBarColor(PrimaryBlue)
     
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val today = currentLocalDate()
     var selectedDate by remember { mutableStateOf(today) }
     var showMonthYearPicker by remember { mutableStateOf(false) }
     

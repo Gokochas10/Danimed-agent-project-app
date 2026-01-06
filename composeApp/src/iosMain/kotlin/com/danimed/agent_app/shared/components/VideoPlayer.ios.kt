@@ -11,9 +11,8 @@ import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItem
-import platform.AVFoundation.AVPlayerLooper
-import platform.AVFoundation.AVQueuePlayer
 import platform.AVFoundation.play
+import platform.AVFoundation.pause
 import platform.AVKit.AVPlayerViewController
 import platform.Foundation.NSBundle
 import platform.Foundation.NSURL
@@ -24,9 +23,10 @@ import platform.UIKit.UIView
 actual fun VideoPlayer(
     resource: String,
     modifier: Modifier,
-    looping: Boolean
+    looping: Boolean,
+    key: Int
 ) {
-    val player = remember { 
+    val player = remember(key) { 
         // Obtener la ruta del recurso desde el bundle
         val bundle = NSBundle.mainBundle
         val resourceName = resource.lowercase().replace("-", "_").replace(" ", "_")
@@ -34,16 +34,9 @@ actual fun VideoPlayer(
         
         if (resourcePath != null) {
             val url = NSURL.fileURLWithPath(resourcePath)
-            val playerItem = AVPlayerItem(uRL = url)
-            
-            if (looping) {
-                // Usar AVQueuePlayer con AVPlayerLooper para loop infinito
-                val queuePlayer = AVQueuePlayer.playerWithItems(listOf(playerItem))
-                AVPlayerLooper.queuePlayer(queuePlayer, templateItem = playerItem)
-                queuePlayer
-            } else {
-                AVPlayer(uRL = url)
-            }
+            // Por ahora usamos un AVPlayer simple. Si se necesita loop explícito,
+            // se puede añadir un observer para reiniciar al finalizar.
+            AVPlayer(uRL = url)
         } else {
             null
         }
@@ -65,14 +58,7 @@ actual fun VideoPlayer(
                     containerView
                 },
                 modifier = Modifier.fillMaxSize(),
-                update = { view ->
-                    // Configurar el frame del video
-                    val subviews = view.subviews
-                    if (subviews.isNotEmpty()) {
-                        val playerView = subviews[0]
-                        playerView.frame = view.bounds
-                    }
-                }
+                update = { _ -> }
             )
             
             DisposableEffect(player) {

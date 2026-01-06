@@ -29,11 +29,9 @@ import com.danimed.agent_app.core.scheduling.presentation.utils.DateFormatter
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
-import kotlinx.datetime.Clock
+import com.danimed.agent_app.shared.utils.currentLocalDate
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 
 data class WeekDay(
     val date: LocalDate,
@@ -49,7 +47,7 @@ fun WeekSelector(
     onDateSelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val today = currentLocalDate()
     
     val weekDays = remember(selectedDate) {
         val startOfWeek = getStartOfWeek(selectedDate)
