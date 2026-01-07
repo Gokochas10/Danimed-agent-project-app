@@ -43,6 +43,7 @@ import com.danimed.agent_app.core.schedule.domain.model.Schedule
 import com.danimed.agent_app.core.scheduling.presentation.utils.DateFormatter
 import com.danimed.agent_app.shared.components.BottomNavBar
 import com.danimed.agent_app.shared.components.BottomNavItem
+import com.danimed.agent_app.shared.components.SchedulePlaceholder
 import com.danimed.agent_app.shared.di.ScheduleModule
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.PrimaryBlue
@@ -136,19 +137,27 @@ fun ScheduleScreen(
                 }
             }
 
-            // Week header (Mon-Sun)
-            WeekHeader()
+            // Contenido: mostrar placeholder mientras carga, o contenido real cuando termine
+            if (uiState.isLoading) {
+                // Placeholder que cubre TODA el área (incluyendo WeekHeader y TimetableGrid)
+                SchedulePlaceholder(
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                // Week header (Mon-Sun) - solo visible cuando no está cargando
+                WeekHeader()
 
-            // Timetable grid
-            TimetableGrid(
-                schedules = uiState.schedules,
-                isLoading = uiState.isLoading,
-                scrollState = scrollState,
-                onScheduleClick = { schedule ->
-                    selectedSchedule = schedule
-                },
-                modifier = Modifier.weight(1f)
-            )
+                // Timetable grid con contenido real
+                TimetableGrid(
+                    schedules = uiState.schedules,
+                    isLoading = uiState.isLoading,
+                    scrollState = scrollState,
+                    onScheduleClick = { schedule ->
+                        selectedSchedule = schedule
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
 
         BottomNavBar(

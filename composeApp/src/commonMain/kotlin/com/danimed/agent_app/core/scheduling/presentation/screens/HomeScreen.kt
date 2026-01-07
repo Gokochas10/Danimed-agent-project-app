@@ -79,8 +79,7 @@ fun HomeScreen(
             )
         }
         BottomNavItem.Schedule -> {
-            // TODO: Implement profile screen
-            AgendaScreen(
+            com.danimed.agent_app.core.profile.presentation.screens.ProfileScreen(
                 currentNavItem = currentNavItem,
                 onNavItemClick = onNavItemClick
             )
