@@ -65,10 +65,27 @@ fun HomeScreen(
     currentNavItem: BottomNavItem = BottomNavItem.Agenda,
     onNavItemClick: (BottomNavItem) -> Unit = {}
 ) {
-    AgendaScreen(
-        currentNavItem = currentNavItem,
-        onNavItemClick = onNavItemClick
-    )
+    when (currentNavItem) {
+        BottomNavItem.Agenda -> {
+            AgendaScreen(
+                currentNavItem = currentNavItem,
+                onNavItemClick = onNavItemClick
+            )
+        }
+        BottomNavItem.Calendar -> {
+            com.danimed.agent_app.core.schedule.presentation.screens.ScheduleScreen(
+                currentNavItem = currentNavItem,
+                onNavItemClick = onNavItemClick
+            )
+        }
+        BottomNavItem.Schedule -> {
+            // TODO: Implement profile screen
+            AgendaScreen(
+                currentNavItem = currentNavItem,
+                onNavItemClick = onNavItemClick
+            )
+        }
+    }
 }
 
 @Composable
