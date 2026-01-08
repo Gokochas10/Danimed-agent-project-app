@@ -50,7 +50,9 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.compose.icons.feather)
+            implementation(libs.placeholder.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

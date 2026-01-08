@@ -5,8 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.danimed.agent_app.shared.components.VideoPreloader
 import com.danimed.agent_app.shared.utils.TokenManagerProvider
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,6 +21,14 @@ class MainActivity : ComponentActivity() {
         TokenManagerProvider.init(this)
 
         setContent {
+            // Precargar el video de no internet
+            val context = LocalContext.current
+            LaunchedEffect(Unit) {
+                GlobalScope.launch {
+                    VideoPreloader.preloadVideo(context, "no_connection")
+                }
+            }
+            
             App()
         }
     }

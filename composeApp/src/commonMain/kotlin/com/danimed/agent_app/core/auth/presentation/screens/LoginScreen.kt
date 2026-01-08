@@ -101,17 +101,16 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight()
                     .background(
                         color = White,
                         shape = RoundedCornerShape(topStart = 70.dp)
                     )
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(28.dp),
+                        .padding(horizontal = 28.dp, vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -207,6 +206,6 @@ fun LoginScreen(
                 }
             }
         }
+
     }
 }
-
