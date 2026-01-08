@@ -1,17 +1,28 @@
 package com.danimed.agent_app.core.scheduling.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOutBounce
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -21,18 +32,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import com.danimed.agent_app.core.bookings.application.viewModel.BookingEventsViewModel
 import com.danimed.agent_app.core.scheduling.presentation.screens.AgendaItem
+import com.danimed.agent_app.shared.components.BookingEventCard
+import com.danimed.agent_app.shared.components.BookingEventsPlaceholder
+import com.danimed.agent_app.shared.di.BookingsModule
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.SplashBackground
 import compose.icons.FeatherIcons
@@ -120,7 +140,8 @@ fun AgendaCard(
         Dialog(onDismissRequest = { showEditDialog = false }) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.95f)
+                    
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
@@ -172,8 +193,8 @@ fun EditSwipeIndicator() {
         ) {
 
             Icon(
-                painter = rememberVectorPainter(image = FeatherIcons.Edit),
-                contentDescription = "Editar",
+                painter = rememberVectorPainter(image = FeatherIcons.Eye),
+                contentDescription = "Ver Detalles",
                 tint = SplashBackground,
                 modifier = Modifier.size(22.dp)
             )
@@ -277,13 +298,13 @@ private fun EditButton() {
         ) {
             Icon(
                 painter = rememberVectorPainter(image = FeatherIcons.Edit),
-                contentDescription = "Editar",
+                contentDescription = "Ver Detalles",
                 tint = Color.White,
                 modifier = Modifier.size(28.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Editar",
+                text = "Ver Detalles",
                 fontSize = 18.sp,
                 fontFamily = InterFontFamily(),
                 fontWeight = FontWeight.Bold,
@@ -400,21 +421,30 @@ private fun CardContent(item: AgendaItem) {
                     .weight(1f)
                     .wrapContentWidth(Alignment.End)
             ) {
-                Icon(
-                    painter = rememberVectorPainter(image = FeatherIcons.Info),
-                    contentDescription = "Estado",
-                    tint = Color(0xFFF44336),
-                    modifier = Modifier.size(16.dp)
-                )
+                if (item.status != null) {
+                    Icon(
+                        painter = rememberVectorPainter(image = FeatherIcons.Info),
+                        contentDescription = "Estado",
+                        tint = Color(0xFFF44336),
+                        modifier = Modifier.size(16.dp)
+                    )
 
-                Spacer(modifier = Modifier.size(2.dp))
+                    Spacer(modifier = Modifier.size(2.dp))
 
-                Text(
-                    text = "Cancelada",
-                    fontSize = 14.sp,
-                    fontFamily = InterFontFamily(),
-                    color = Color(0xFFF44336)
-                )
+                    Text(
+                        text = item.status,
+                        fontSize = 14.sp,
+                        fontFamily = InterFontFamily(),
+                        color = Color(0xFFF44336)
+                    )
+                } else {
+                    Icon(
+                        painter = rememberVectorPainter(image = FeatherIcons.HelpCircle),
+                        contentDescription = "Estado desconocido",
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
@@ -425,119 +455,329 @@ private fun EditForm(
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
-    var title by remember { mutableStateOf(item.title) }
-    var time by remember { mutableStateOf(item.time) }
-    var duration by remember { mutableStateOf(item.duration) }
+    val bookingId = item.id.toIntOrNull() ?: 0
+    val eventsViewModel = remember { BookingEventsViewModel(BookingsModule.getBookingEventsUseCase) }
+    val eventsUiState by eventsViewModel.uiState
+    var showHistory by remember { mutableStateOf(false) }
+    var formHeight by remember { mutableStateOf(0.dp) }
+    val density = LocalDensity.current
 
-    Column(
+    LaunchedEffect(bookingId, showHistory) {
+        if (bookingId > 0 && showHistory) {
+            eventsViewModel.loadEvents(bookingId)
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (formHeight > 0.dp) {
+                    Modifier.height(formHeight + 32.dp) // Agregar padding
+                } else {
+                    Modifier.wrapContentHeight()
+                }
+            )
             .padding(16.dp)
     ) {
-        Text(
-            text = "Editar Cita",
-            fontSize = 20.sp,
-            fontFamily = InterFontFamily(),
-            fontWeight = FontWeight.Bold,
-            color = SplashBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+        // Icono X para cerrar en la esquina superior derecha (siempre visible)
+        Icon(
+            painter = rememberVectorPainter(image = FeatherIcons.X),
+            contentDescription = "Cerrar",
+            tint = Color(0xFFF44336),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(24.dp)
+                .clickable { onCancel() }
+                .zIndex(10f)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Flecha hacia la izquierda para volver (solo visible cuando se muestra el historial)
+        if (showHistory) {
+            Icon(
+                painter = rememberVectorPainter(image = FeatherIcons.ArrowLeft),
+                contentDescription = "Volver",
+                tint = SplashBackground,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .size(24.dp)
+                    .clickable { showHistory = false }
+                    .zIndex(10f)
+            )
+        }
 
-        // Campo de título
-        Text(
-            text = "Paciente",
-            fontSize = 14.sp,
-            fontFamily = InterFontFamily(),
-            color = SplashBackground,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontFamily = InterFontFamily(),
-            color = SplashBackground,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp)
-                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                .padding(12.dp)
-        )
-
-        // Campo de tiempo
-        Text(
-            text = "Horario",
-            fontSize = 14.sp,
-            fontFamily = InterFontFamily(),
-            color = SplashBackground,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Text(
-            text = time,
-            fontSize = 16.sp,
-            fontFamily = InterFontFamily(),
-            color = SplashBackground,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp)
-                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                .padding(12.dp)
-        )
-
-        // Campo de duración
-        Text(
-            text = "Duración",
-            fontSize = 14.sp,
-            fontFamily = InterFontFamily(),
-            color = SplashBackground,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Text(
-            text = duration,
-            fontSize = 16.sp,
-            fontFamily = InterFontFamily(),
-            color = SplashBackground,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                .padding(12.dp)
-        )
-
-        // Botones de acción
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .wrapContentHeight()
         ) {
-            Button(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE0E0E0)
+            // Formulario (se desliza hacia arriba y desaparece)
+            AnimatedVisibility(
+                visible = !showHistory,
+                exit = slideOutVertically(
+                    targetOffsetY = { -it },
+                    animationSpec = tween(durationMillis = 400)
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 400)
                 ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "Cancelar",
-                    color = Color(0xFF666666),
-                    fontFamily = InterFontFamily()
+                enter = slideInVertically(
+                    initialOffsetY = { 0 },
+                    animationSpec = tween(durationMillis = 400)
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 400)
                 )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .onGloballyPositioned { coordinates ->
+                            if (!showHistory && formHeight == 0.dp) {
+                                formHeight = with(density) { coordinates.size.height.toDp() }
+                            }
+                        }
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // Título centrado
+                    Text(
+                        text = "Ver Detalles Cita",
+                        fontSize = 20.sp,
+                        fontFamily = InterFontFamily(),
+                        fontWeight = FontWeight.Bold,
+                        color = SplashBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Campo de título
+                    Text(
+                        text = "Paciente",
+                        fontSize = 14.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = item.title,
+                        fontSize = 12.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                            .padding(10.dp)
+                    )
+
+                    // Campo de tiempo
+                    Text(
+                        text = "Horario",
+                        fontSize = 14.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = item.time,
+                        fontSize = 12.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                            .padding(10.dp)
+                    )
+
+                    // Campo de duración
+                    Text(
+                        text = "Duración",
+                        fontSize = 14.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = item.duration,
+                        fontSize = 12.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                            .padding(10.dp)
+                    )
+
+                    // Campo de estado
+                    Text(
+                        text = "Estado",
+                        fontSize = 14.sp,
+                        fontFamily = InterFontFamily(),
+                        color = SplashBackground,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (item.status != null) {
+                            Icon(
+                                painter = rememberVectorPainter(image = FeatherIcons.Info),
+                                contentDescription = "Estado",
+                                tint = Color(0xFFF44336),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = item.status,
+                                fontSize = 12.sp,
+                                fontFamily = InterFontFamily(),
+                                color = SplashBackground
+                            )
+                        } else {
+                            Icon(
+                                painter = rememberVectorPainter(image = FeatherIcons.HelpCircle),
+                                contentDescription = "Estado desconocido",
+                                tint = Color(0xFF666666),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Sin estado",
+                                fontSize = 12.sp,
+                                fontFamily = InterFontFamily(),
+                                color = Color(0xFF666666)
+                            )
+                        }
+                    }
+
+                    // Botones de acción
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                // TODO: Implementar lógica de reagendar
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SplashBackground
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Reagendar Cita",
+                                color = Color.White,
+                                fontFamily = InterFontFamily(),
+                                fontSize = 16.sp
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                showHistory = true
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE0E0E0)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Ver Historial de Cita",
+                                color = Color(0xFF666666),
+                                fontFamily = InterFontFamily(),
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
             }
 
-            Button(
-                onClick = onSave,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = SplashBackground
+            // Historial de eventos (aparece desde abajo y ocupa todo el espacio)
+            AnimatedVisibility(
+                visible = showHistory,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = 400)
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 400)
                 ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "Guardar",
-                    color = Color.White,
-                    fontFamily = InterFontFamily()
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = 400)
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 400)
                 )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (formHeight > 0.dp) {
+                                Modifier.height(formHeight)
+                            } else {
+                                Modifier.wrapContentHeight()
+                            }
+                        )
+                ) {
+                    // Título del historial
+                    Text(
+                        text = "Historial de Eventos",
+                        fontSize = 20.sp,
+                        fontFamily = InterFontFamily(),
+                        fontWeight = FontWeight.Bold,
+                        color = SplashBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 24.dp),
+                        textAlign = TextAlign.Center
+                    )
+
+                    // Contenido scrollable que ocupa el resto del espacio
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        if (eventsUiState.isLoading) {
+                            BookingEventsPlaceholder(
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else if (eventsUiState.events.isEmpty()) {
+                            Text(
+                                text = "No hay eventos registrados",
+                                fontSize = 14.sp,
+                                fontFamily = InterFontFamily(),
+                                color = Color(0xFF666666),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(vertical = 16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(vertical = 8.dp)
+                            ) {
+                                items(eventsUiState.events) { event ->
+                                    BookingEventCard(event = event)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

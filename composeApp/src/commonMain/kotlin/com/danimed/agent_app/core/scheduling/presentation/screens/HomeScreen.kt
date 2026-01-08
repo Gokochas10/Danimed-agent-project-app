@@ -32,14 +32,20 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import com.danimed.agent_app.core.bookings.application.viewModel.BookingsViewModel
+import com.danimed.agent_app.core.bookings.domain.model.Booking
 import com.danimed.agent_app.core.scheduling.presentation.components.AgendaCard
 import com.danimed.agent_app.core.scheduling.presentation.components.AgendaHeader
 import com.danimed.agent_app.core.scheduling.presentation.components.DateHeader
 import com.danimed.agent_app.core.scheduling.presentation.components.MonthYearPicker
 import com.danimed.agent_app.core.scheduling.presentation.components.WeekSelector
 import com.danimed.agent_app.core.scheduling.presentation.utils.rememberHeaderAlpha
+import com.danimed.agent_app.shared.components.AgendaPlaceholder
 import com.danimed.agent_app.shared.components.BottomNavBar
 import com.danimed.agent_app.shared.components.BottomNavItem
+import com.danimed.agent_app.shared.components.DateHeaderPlaceholder
+import com.danimed.agent_app.shared.components.WeekSelectorPlaceholder
+import com.danimed.agent_app.shared.di.BookingsModule
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
@@ -57,7 +63,8 @@ data class AgendaItem(
     val colorIndicator: Color,
     val startTime: String,
     val endTime: String,
-    val date: LocalDate
+    val date: LocalDate,
+    val status: String? = null
 )
 
 @Composable
@@ -94,117 +101,61 @@ private fun AgendaScreen(
 ) {
     SetStatusBarColor(PrimaryBlue)
     
-    val today = currentLocalDate()
-    var selectedDate by remember { mutableStateOf(today) }
-    var showMonthYearPicker by remember { mutableStateOf(false) }
+    val viewModel = remember { BookingsViewModel(BookingsModule.getBookingsUseCase) }
+    val uiState by viewModel.uiState
     
-    val allAgendaItems = remember {
-        listOf(
-            AgendaItem(
-                id = "1",
-                title = "Juan Jose Fiallos",
-                duration = "60 MIN",
-                time = "10:30am - 11:30am",
-                colorIndicator = Color(0xFF4FC3F7),
-                startTime = "9:30am",
-                endTime = "10:30am",
-                date = today
-            ),
-            AgendaItem(
-                id = "2",
-                title = "Silvana Diaz",
-                duration = "60 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "3",
-                title = "Matias Gamboa",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            ),
-            AgendaItem(
-                id = "4",
-                title = "Lenin Herrera",
-                duration = "30 MIN",
-                time = "9:30am - 10:00am",
-                colorIndicator = Color(0xFFFFEB3B),
-                startTime = "9:30am",
-                endTime = "10:00am",
-                date = today
-            )
-        )
+    // No inicializar con fecha local, esperar server_date
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showMonthYearPicker by remember { mutableStateOf(false) }
+    var isInitialLoad by remember { mutableStateOf(true) }
+    var previousSelectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    
+    // Cargar bookings cuando se cambia a la pestaña Agenda
+    LaunchedEffect(currentNavItem) {
+        if (currentNavItem == BottomNavItem.Agenda && isInitialLoad) {
+            viewModel.loadBookings(doctorId = 1, date = null)
+        }
     }
     
-    val agendaItems = remember(selectedDate) {
-        allAgendaItems.filter { it.date == selectedDate }
+    // Actualizar selectedDate con server_date cuando se carga por primera vez
+    LaunchedEffect(uiState.bookingsResponse) {
+        uiState.bookingsResponse?.let { response ->
+            if (selectedDate == null) {
+                val serverDate = parseDateString(response.server_date)
+                if (serverDate != null) {
+                    selectedDate = serverDate
+                    previousSelectedDate = serverDate
+                    isInitialLoad = false
+                }
+            }
+        }
+    }
+    
+    // Cargar bookings cuando cambia la fecha seleccionada (solo si fue cambio manual, no inicialización)
+    LaunchedEffect(selectedDate) {
+        selectedDate?.let { date ->
+            // Solo hacer fetch si:
+            // 1. Ya terminó la carga inicial (isInitialLoad = false)
+            // 2. La fecha realmente cambió (no es la primera vez que se establece)
+            if (!isInitialLoad && previousSelectedDate != null && date != previousSelectedDate) {
+                val dateString = formatDateForApi(date)
+                viewModel.loadBookings(doctorId = 1, date = dateString)
+                previousSelectedDate = date
+            }
+        }
+    }
+    
+    // Convertir bookings a AgendaItems
+    val allAgendaItems = remember(uiState.bookingsResponse) {
+        uiState.bookingsResponse?.bookings?.map { booking ->
+            bookingToAgendaItem(booking)
+        } ?: emptyList()
+    }
+    
+    val agendaItems = remember(selectedDate, allAgendaItems) {
+        selectedDate?.let { date ->
+            allAgendaItems.filter { it.date == date }
+        } ?: emptyList()
     }
     
     // Estado del scroll para detectar dirección y calcular visibilidad del header
@@ -277,52 +228,67 @@ private fun AgendaScreen(
                         }
                     }
                     
-                    DateHeader(
-                        date = selectedDate,
-                        onDateClick = { showMonthYearPicker = true }
-                    )
-                    
-                    WeekSelector(
-                        selectedDate = selectedDate,
-                        onDateSelected = { selectedDate = it }
-                    )
+                    // Mostrar placeholders si aún no tenemos server_date, sino mostrar componentes reales
+                    val currentDate = selectedDate
+                    if (currentDate == null || uiState.isLoading) {
+                        DateHeaderPlaceholder()
+                        WeekSelectorPlaceholder()
+                    } else {
+                        DateHeader(
+                            date = currentDate,
+                            onDateClick = { showMonthYearPicker = true }
+                        )
+                        
+                        WeekSelector(
+                            selectedDate = currentDate,
+                            onDateSelected = { selectedDate = it }
+                        )
+                    }
                 }
             }
             
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    top = 20.dp,
-                    bottom = 100.dp
+            if (uiState.isLoading) {
+                AgendaPlaceholder(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 )
-            ) {
-                if (agendaItems.isEmpty()) {
-                    item {
-                        Text(
-                            text = "No hay citas programadas para este día",
-                            fontSize = 14.sp,
-                            fontFamily = InterFontFamily(),
-                            color = Color(0xFF666666),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                } else {
-                    items(agendaItems) { item ->
-                        AgendaCard(
-                            item = item,
-                            onEditClick = { editedItem ->
-                                // Aquí puedes manejar la edición
-                                println("Editing: ${editedItem.title}")
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        top = 20.dp,
+                        bottom = 100.dp
+                    )
+                ) {
+                    if (agendaItems.isEmpty()) {
+                        item {
+                            Text(
+                                text = "No hay citas programadas para este día",
+                                fontSize = 14.sp,
+                                fontFamily = InterFontFamily(),
+                                color = Color(0xFF666666),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    } else {
+                        items(agendaItems) { item ->
+                            AgendaCard(
+                                item = item,
+                                onEditClick = { editedItem ->
+                                    // Aquí puedes manejar la edición
+                                    println("Editing: ${editedItem.title}")
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
                     }
                 }
             }
@@ -337,16 +303,99 @@ private fun AgendaScreen(
         )
     }
     
-    if (showMonthYearPicker) {
-        MonthYearPicker(
-            currentDate = selectedDate,
-            onDateSelected = { newDate ->
-                selectedDate = newDate
-                showMonthYearPicker = false
-            },
-            onDismiss = { showMonthYearPicker = false }
-        )
+    selectedDate?.let { date ->
+        if (showMonthYearPicker) {
+            MonthYearPicker(
+                currentDate = date,
+                onDateSelected = { newDate ->
+                    selectedDate = newDate
+                    showMonthYearPicker = false
+                },
+                onDismiss = { showMonthYearPicker = false }
+            )
+        }
     }
 }
 
+/**
+ * Convierte un Booking del dominio a un AgendaItem para la UI
+ */
+private fun bookingToAgendaItem(booking: Booking): AgendaItem {
+    val date = parseDateString(booking.booking_date) ?: currentLocalDate()
+    val startTimeFormatted = formatTime(booking.start_time)
+    val endTimeFormatted = formatTime(booking.end_time)
+    val timeRange = "$startTimeFormatted - $endTimeFormatted"
+    val duration = "${booking.duration_minutes} MIN"
+    
+    // Color basado en la duración o estado (puedes ajustar la lógica)
+    val colorIndicator = when {
+        booking.duration_minutes >= 60 -> Color(0xFF4FC3F7)
+        booking.duration_minutes >= 30 -> Color(0xFFFFEB3B)
+        else -> Color(0xFF4CAF50)
+    }
+    
+    return AgendaItem(
+        id = booking.booking_id.toString(),
+        title = booking.patient_name,
+        duration = duration,
+        time = timeRange,
+        colorIndicator = colorIndicator,
+        startTime = startTimeFormatted,
+        endTime = endTimeFormatted,
+        date = date,
+        status = booking.status
+    )
+}
 
+/**
+ * Parsea una fecha en formato "2026-01-07" a LocalDate
+ */
+private fun parseDateString(dateString: String): LocalDate? {
+    return try {
+        val parts = dateString.split("-")
+        if (parts.size == 3) {
+            LocalDate(
+                year = parts[0].toInt(),
+                month = kotlinx.datetime.Month(parts[1].toInt()),
+                dayOfMonth = parts[2].toInt()
+            )
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+/**
+ * Formatea una hora en formato "10:00:00" a "10:00am"
+ */
+private fun formatTime(timeString: String): String {
+    return try {
+        val parts = timeString.split(":")
+        if (parts.size >= 2) {
+            val hour = parts[0].toInt()
+            val minute = parts[1].toInt()
+            val period = if (hour < 12) "am" else "pm"
+            val displayHour = when {
+                hour == 0 -> 12
+                hour > 12 -> hour - 12
+                else -> hour
+            }
+            String.format("%d:%02d%s", displayHour, minute, period)
+        } else {
+            timeString
+        }
+    } catch (e: Exception) {
+        timeString
+    }
+}
+
+/**
+ * Formatea una LocalDate a formato "2026-01-07" para la API
+ */
+private fun formatDateForApi(date: LocalDate): String {
+    val month = date.monthNumber.toString().padStart(2, '0')
+    val day = date.dayOfMonth.toString().padStart(2, '0')
+    return "${date.year}-$month-$day"
+}
