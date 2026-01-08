@@ -3,14 +3,11 @@ package com.danimed.agent_app.core.scheduling.presentation.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -25,13 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import com.danimed.agent_app.core.searching.presentation.screens.SearchScreen
 import com.danimed.agent_app.core.bookings.application.viewModel.BookingsViewModel
 import com.danimed.agent_app.core.bookings.domain.model.Booking
 import com.danimed.agent_app.core.scheduling.presentation.components.AgendaCard
@@ -49,10 +47,8 @@ import com.danimed.agent_app.shared.di.BookingsModule
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
-import com.danimed.agent_app.shared.theme.White
 import com.danimed.agent_app.shared.utils.SetStatusBarColor
 import com.danimed.agent_app.shared.utils.currentLocalDate
-import androidx.compose.ui.graphics.Color.Companion.Transparent
 import kotlinx.datetime.LocalDate
 
 data class AgendaItem(
@@ -70,7 +66,8 @@ data class AgendaItem(
 @Composable
 fun HomeScreen(
     currentNavItem: BottomNavItem = BottomNavItem.Agenda,
-    onNavItemClick: (BottomNavItem) -> Unit = {}
+    onNavItemClick: (BottomNavItem) -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     when (currentNavItem) {
         BottomNavItem.Agenda -> {
@@ -80,7 +77,7 @@ fun HomeScreen(
             )
         }
         BottomNavItem.Calendar -> {
-            com.danimed.agent_app.core.schedule.presentation.screens.ScheduleScreen(
+            ScheduleScreen(
                 currentNavItem = currentNavItem,
                 onNavItemClick = onNavItemClick
             )
@@ -88,7 +85,8 @@ fun HomeScreen(
         BottomNavItem.Schedule -> {
             com.danimed.agent_app.core.profile.presentation.screens.ProfileScreen(
                 currentNavItem = currentNavItem,
-                onNavItemClick = onNavItemClick
+                onNavItemClick = onNavItemClick,
+                onLogout = onLogout
             )
         }
     }
@@ -109,6 +107,8 @@ private fun AgendaScreen(
     var showMonthYearPicker by remember { mutableStateOf(false) }
     var isInitialLoad by remember { mutableStateOf(true) }
     var previousSelectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showSearchScreen by remember { mutableStateOf(false) }
+    var searchClickPosition by remember { mutableStateOf<Offset?>(null) }
     
     // Cargar bookings cuando se cambia a la pestaña Agenda
     LaunchedEffect(currentNavItem) {
@@ -218,7 +218,10 @@ private fun AgendaScreen(
                                 AgendaHeader(
                                     doctorId = "1805263782",
                                     scheduleTitle = "Bienvenido Joshua!",
-                                    onSearchClick = { },
+                                    onSearchClick = { position ->
+                                        searchClickPosition = position
+                                        showSearchScreen = true
+                                    },
                                     onNotificationClick = { },
                                     alpha = headerAlpha
                                 )
@@ -314,6 +317,18 @@ private fun AgendaScreen(
                 onDismiss = { showMonthYearPicker = false }
             )
         }
+    }
+    
+    // Search Screen
+    if (showSearchScreen) {
+        SearchScreen(
+            onDismiss = {
+                showSearchScreen = false
+                searchClickPosition = null
+            },
+            initialClickPosition = searchClickPosition,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 

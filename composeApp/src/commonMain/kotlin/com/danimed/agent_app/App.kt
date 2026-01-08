@@ -144,7 +144,11 @@ fun App() {
                     var currentNavItem by remember { mutableStateOf<BottomNavItem>(BottomNavItem.Agenda) }
                     HomeScreen(
                         currentNavItem = currentNavItem,
-                        onNavItemClick = { currentNavItem = it }
+                        onNavItemClick = { currentNavItem = it },
+                        onLogout = {
+                            tokenManager.clearToken()
+                            currentScreen = AppScreen.Login
+                        }
                     )
                 }
             }

@@ -9,18 +9,26 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Search
 import compose.icons.feathericons.Bell
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.font.FontWeight
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.White
@@ -29,7 +37,7 @@ import com.danimed.agent_app.shared.theme.White
 fun AgendaHeader(
     doctorId: String = "1805263782",
     scheduleTitle: String = "Bienvenido Joshua!",
-    onSearchClick: () -> Unit = {},
+    onSearchClick: (Offset) -> Unit = { },
     onNotificationClick: () -> Unit = {},
     alpha: Float = 1f,
     modifier: Modifier = Modifier
@@ -40,6 +48,9 @@ fun AgendaHeader(
         animationSpec = tween(durationMillis = 500),
         label = "header_alpha"
     )
+    
+    val density = LocalDensity.current
+    var searchButtonPosition by remember { mutableStateOf<Offset?>(null) }
     
     Box(
         modifier = modifier
@@ -73,9 +84,21 @@ fun AgendaHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                IconButton(
-                    onClick = onSearchClick,
-                    modifier = Modifier.size(48.dp)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .onGloballyPositioned { coordinates ->
+                            val position = coordinates.positionInRoot()
+                            val centerX = position.x + coordinates.size.width / 2f
+                            val centerY = position.y + coordinates.size.height / 2f
+                            searchButtonPosition = Offset(centerX, centerY)
+                        }
+                        .clickable {
+                            searchButtonPosition?.let { position ->
+                                onSearchClick(position)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = rememberVectorPainter(image = FeatherIcons.Search),

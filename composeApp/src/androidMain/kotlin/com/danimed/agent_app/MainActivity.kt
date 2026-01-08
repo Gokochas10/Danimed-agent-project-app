@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.danimed.agent_app.shared.components.VideoPreloader
+import com.danimed.agent_app.shared.utils.RecentSearchesManagerProvider
 import com.danimed.agent_app.shared.utils.TokenManagerProvider
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         TokenManagerProvider.init(this)
+        RecentSearchesManagerProvider.init(this)
 
         setContent {
             // Precargar el video de no internet
