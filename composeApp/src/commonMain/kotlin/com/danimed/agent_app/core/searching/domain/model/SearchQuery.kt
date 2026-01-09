@@ -5,3 +5,4 @@ data class SearchQuery(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+

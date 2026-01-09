@@ -37,8 +37,7 @@ fun createHttpClient(): HttpClient {
             validateResponse { response ->
                 when {
                     response.status == HttpStatusCode.Unauthorized -> {
-                        val tokenManager = TokenManagerProvider.getTokenManager()
-                        tokenManager.clearToken()
+                        // No limpiar el token aquí, dejar que App.kt maneje el re-login automático
                         AuthRedirectHandler.notifyUnauthorized()
                     }
                     response.status.value >= 500 -> {

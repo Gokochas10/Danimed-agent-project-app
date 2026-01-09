@@ -15,15 +15,20 @@ import com.danimed.agent_app.core.scheduling.presentation.screens.HomeScreen
 import com.danimed.agent_app.shared.components.BottomNavItem
 import com.danimed.agent_app.shared.components.NoInternetScreen
 import com.danimed.agent_app.shared.networks.NetworkErrorHandler
+import com.danimed.agent_app.shared.di.AuthModule
 import com.danimed.agent_app.shared.navigation.AuthRedirectHandler
 import com.danimed.agent_app.shared.theme.AppTheme
+import com.danimed.agent_app.shared.utils.CredentialsManagerProvider
 import com.danimed.agent_app.shared.utils.SplashState
 import com.danimed.agent_app.shared.utils.TokenManagerProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import io.ktor.client.HttpClient
 import io.ktor.client.request.head
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -65,6 +70,7 @@ fun App() {
         var videoKey by remember { mutableIntStateOf(0) }
         var lastNoInternetState by remember { mutableStateOf(false) }
         var lastScreen by remember { mutableStateOf<AppScreen?>(null) }
+        var isManualLogout by remember { mutableStateOf(false) }
 
         // Incrementar videoKey cada vez que aparece la pantalla de no internet
         // Esto fuerza la recarga del video cuando se muestra nuevamente
@@ -90,10 +96,53 @@ fun App() {
             lastScreen = currentScreen
         }
 
+        val credentialsManager = remember { CredentialsManagerProvider.getCredentialsManager() }
+        var isRelogging by remember { mutableStateOf(false) }
+        
+        // Manejar re-login automático cuando el token expire
+        LaunchedEffect(Unit) {
+            // Este efecto se ejecuta cuando hay un cambio de estado que requiere re-login
+        }
+        
         DisposableEffect(Unit) {
             AuthRedirectHandler.setOnUnauthorizedCallback {
-                tokenManager.clearToken()
-                currentScreen = AppScreen.Login
+                if (!isRelogging) {
+                    isRelogging = true
+                    // Intentar re-login automático si hay credenciales guardadas
+                    val savedCredentials = credentialsManager.getCredentials()
+                    if (savedCredentials != null) {
+                        // Intentar re-login en background
+                        CoroutineScope(Dispatchers.Default).launch {
+                            val result = AuthModule.loginUseCase(
+                                savedCredentials.first,
+                                savedCredentials.second
+                            )
+                            result.onSuccess { newToken ->
+                                tokenManager.saveToken(newToken)
+                                isRelogging = false
+                                // Notificar que el re-login fue exitoso
+                                AuthRedirectHandler.attemptAutoRelogin(newToken)
+                            }.onFailure {
+                                // Si falla el re-login, limpiar credenciales y redirigir al login
+                                tokenManager.clearToken()
+                                credentialsManager.clearCredentials()
+                                isRelogging = false
+                                currentScreen = AppScreen.Login
+                            }
+                        }
+                    } else {
+                        // No hay credenciales guardadas, redirigir al login normalmente
+                        tokenManager.clearToken()
+                        isRelogging = false
+                        currentScreen = AppScreen.Login
+                    }
+                }
+            }
+            
+            AuthRedirectHandler.setOnAutoReloginCallback { newToken ->
+                // El re-login fue exitoso, el token ya está guardado
+                isRelogging = false
+                // No necesitamos cambiar de pantalla, el usuario sigue en Home
             }
 
             onDispose {
@@ -134,19 +183,46 @@ fun App() {
                         currentScreen = AppScreen.Login
                     }
                 )
-                currentScreen is AppScreen.Login -> LoginScreen(
-                    onLoginSuccess = { token ->
-                        tokenManager.saveToken(token)
-                        currentScreen = AppScreen.Home
+                currentScreen is AppScreen.Login -> {
+                    // Verificar si hay token y redirigir a Home, pero solo si NO es logout manual
+                    LaunchedEffect(currentScreen, isManualLogout) {
+                        if (currentScreen is AppScreen.Login) {
+                            if (isManualLogout) {
+                                // Es logout manual, asegurarse de que el token esté limpio
+                                tokenManager.clearToken()
+                                // Resetear el flag después de un pequeño delay para evitar loops
+                                delay(100)
+                                isManualLogout = false
+                            } else {
+                                // No es logout manual, verificar si hay token
+                                val token = tokenManager.getToken()
+                                if (token != null) {
+                                    // Hay un token válido, redirigir a Home
+                                    currentScreen = AppScreen.Home
+                                }
+                            }
+                        }
                     }
-                )
+                    
+                    LoginScreen(
+                        onLoginSuccess = { token ->
+                            tokenManager.saveToken(token)
+                            isManualLogout = false // Resetear flag al hacer login exitoso
+                            currentScreen = AppScreen.Home
+                        }
+                    )
+                }
                 currentScreen is AppScreen.Home -> {
                     var currentNavItem by remember { mutableStateOf<BottomNavItem>(BottomNavItem.Agenda) }
                     HomeScreen(
                         currentNavItem = currentNavItem,
                         onNavItemClick = { currentNavItem = it },
                         onLogout = {
+                            // Limpiar token y credenciales ANTES de cambiar de pantalla
                             tokenManager.clearToken()
+                            credentialsManager.clearCredentials()
+                            // Marcar como logout manual y cambiar de pantalla
+                            isManualLogout = true
                             currentScreen = AppScreen.Login
                         }
                     )

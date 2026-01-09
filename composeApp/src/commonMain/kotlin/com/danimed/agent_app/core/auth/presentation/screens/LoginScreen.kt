@@ -11,19 +11,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +45,7 @@ import com.danimed.agent_app.shared.theme.LoginBackground
 import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
+import com.danimed.agent_app.shared.utils.CredentialsManagerProvider
 
 @Composable
 fun LoginScreen(
@@ -48,13 +53,31 @@ fun LoginScreen(
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
     val fontFamily = InterFontFamily()
+    val credentialsManager = remember { CredentialsManagerProvider.getCredentialsManager() }
     val viewModel: LoginViewModel = viewModel {
         LoginViewModel(AuthModule.loginUseCase)
+    }
+    
+    // Cargar credenciales guardadas si existen
+    LaunchedEffect(Unit) {
+        val savedCredentials = credentialsManager.getCredentials()
+        if (savedCredentials != null) {
+            username = savedCredentials.first
+            password = savedCredentials.second
+            rememberMe = true
+        }
     }
 
     LaunchedEffect(viewModel.uiState.isSuccess, viewModel.uiState.token) {
         if (viewModel.uiState.isSuccess && viewModel.uiState.token != null) {
+            // Guardar credenciales si "mantener inicio de sesión" está activado
+            if (rememberMe) {
+                credentialsManager.saveCredentials(username, password)
+            } else {
+                credentialsManager.clearCredentials()
+            }
             onLoginSuccess(viewModel.uiState.token!!)
         }
     }
@@ -175,14 +198,44 @@ fun LoginScreen(
                         shape = RoundedCornerShape(16.dp)
                     )
 
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Switch para mantener inicio de sesión
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Start
+                    ) {
+                        Switch(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it },
+                            enabled = !viewModel.uiState.isLoading
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Mantener inicio de sesión",
+                            fontSize = 14.sp,
+                            fontFamily = fontFamily,
+                            color = PrimaryBlue,
+                            modifier = Modifier.clickable(enabled = !viewModel.uiState.isLoading) {
+                                rememberMe = !rememberMe
+                            }
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    val isEnabled =
+                        !viewModel.uiState.isLoading &&
+                                username.isNotBlank() &&
+                                password.isNotBlank()
 
                     Button(
                         onClick = { viewModel.login(username, password, onLoginSuccess) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        enabled = !viewModel.uiState.isLoading && username.isNotBlank() && password.isNotBlank(),
+                        enabled = isEnabled,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PrimaryBlue
                         ),
@@ -199,7 +252,11 @@ fun LoginScreen(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = fontFamily,
-                                color = White
+                                color = if (isEnabled) {
+                                    White
+                                } else {
+                                    SplashBackground.copy(alpha = 0.4f)
+                                }
                             )
                         }
                     }

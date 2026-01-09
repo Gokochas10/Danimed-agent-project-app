@@ -10,3 +10,4 @@ interface RecentSearchesManager {
     fun clearSearches()
 }
 
+

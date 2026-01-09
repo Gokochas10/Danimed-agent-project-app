@@ -119,8 +119,9 @@ fun SearchScreen(
                 onValueChange = { viewModel.updateSearchQuery(it) },
                 placeholder = {
                     Text(
-                        text = "Buscar...",
+                        text = "Buscar paciente por nombre o cédula...",
                         fontFamily = InterFontFamily(),
+                        fontSize = 12.sp,
                         color = PrimaryBlue.copy(alpha = 0.6f)
                     )
                 },

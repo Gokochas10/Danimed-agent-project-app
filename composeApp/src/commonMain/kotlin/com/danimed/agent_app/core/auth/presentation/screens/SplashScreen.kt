@@ -1,7 +1,9 @@
 package com.danimed.agent_app.core.auth.presentation.screens
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -43,19 +46,39 @@ fun SplashScreen(
     val density = LocalDensity.current
     val tokenManager = TokenManagerProvider.getTokenManager()
     
-    val offsetY = with(density) { (-40).dp }
+    // Animaciones para el icono
+    val iconScale = remember { Animatable(0.3f) }
+    val iconOffsetY = remember { Animatable(0f) }
+    val iconAlpha = remember { Animatable(0f) }
     
-    val alpha by animateFloatAsState(
+    // Animación para el contenedor (texto)
+    val containerOffsetY = with(density) { (-20).dp }
+    val containerAlpha by animateFloatAsState(
         targetValue = 1f,
         animationSpec = tween(durationMillis = 800),
-        label = "alpha"
+        label = "container_alpha"
     )
     
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 800),
-        label = "scale"
-    )
+    // Animar el icono: aparece pequeño, crece y sube
+    LaunchedEffect(Unit) {
+        // 1. Aparecer con fade in
+        iconAlpha.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 300, easing = EaseOutCubic)
+        )
+        
+        // 2. Crecer del tamaño pequeño al completo
+        iconScale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 600, easing = EaseOutCubic)
+        )
+        
+        // 3. Subir un poco para dar espacio al texto
+        iconOffsetY.animateTo(
+            targetValue = -20f,
+            animationSpec = tween(durationMillis = 400, easing = EaseOutCubic)
+        )
+    }
     
     LaunchedEffect(Unit) {
         if (!SplashState.hasShownSplash()) {
@@ -90,14 +113,18 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .padding(horizontal = 32.dp)
-                .offset(y = offsetY)
-                .alpha(alpha)
-                .scale(scale)
+                .offset(y = containerOffsetY)
+                .alpha(containerAlpha)
         ) {
+            // Icono con animación independiente
             Image(
                 painter = painterResource(Res.drawable.danimed_logo_scheduler_white),
                 contentDescription = null,
-                modifier = Modifier.size(200.dp)
+                modifier = Modifier
+                    .size(200.dp)
+                    .scale(iconScale.value)
+                    .offset(y = with(density) { iconOffsetY.value.dp })
+                    .alpha(iconAlpha.value)
             )
             
             TypewriterText(
@@ -107,7 +134,7 @@ fun SplashScreen(
                 fontFamily = fontFamily,
                 textAlign = TextAlign.Center,
                 delayMillis = 50,
-                startDelay = 800
+                startDelay = 1300 // Aumentar delay para que aparezca después de que el icono suba
             )
         }
     }

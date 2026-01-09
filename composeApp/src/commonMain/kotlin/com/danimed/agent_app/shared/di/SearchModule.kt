@@ -15,3 +15,4 @@ object SearchModule {
     val clearRecentSearchesUseCase = ClearRecentSearchesUseCase(searchRepository)
 }
 
+

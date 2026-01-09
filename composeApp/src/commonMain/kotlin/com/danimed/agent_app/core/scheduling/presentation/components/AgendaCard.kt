@@ -733,14 +733,14 @@ private fun EditForm(
                 ) {
                     // Título del historial
                     Text(
-                        text = "Historial de Eventos",
+                        text = "Historial de Citas",
                         fontSize = 20.sp,
                         fontFamily = InterFontFamily(),
                         fontWeight = FontWeight.Bold,
                         color = SplashBackground,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 24.dp),
+                            .padding(top = 20.dp, bottom = 24.dp),
                         textAlign = TextAlign.Center
                     )
 

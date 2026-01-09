@@ -8,3 +8,4 @@ interface SearchRepository {
     suspend fun clearRecentSearches(): Result<Unit>
 }
 
+
