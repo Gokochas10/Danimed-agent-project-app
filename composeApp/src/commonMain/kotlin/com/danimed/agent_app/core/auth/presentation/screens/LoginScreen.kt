@@ -39,6 +39,7 @@ import org.jetbrains.compose.resources.painterResource
 import agent_app.composeapp.generated.resources.Res
 import agent_app.composeapp.generated.resources.danimed_logo
 import com.danimed.agent_app.core.auth.application.viewModel.LoginViewModel
+import com.danimed.agent_app.getPlatform
 import com.danimed.agent_app.shared.di.AuthModule
 import com.danimed.agent_app.shared.theme.InterFontFamily
 import com.danimed.agent_app.shared.theme.LoginBackground
@@ -46,6 +47,7 @@ import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
 import com.danimed.agent_app.shared.utils.CredentialsManagerProvider
+import com.danimed.agent_app.shared.utils.FcmTokenManagerProvider
 
 @Composable
 fun LoginScreen(
@@ -56,6 +58,11 @@ fun LoginScreen(
     var rememberMe by remember { mutableStateOf(false) }
     val fontFamily = InterFontFamily()
     val credentialsManager = remember { CredentialsManagerProvider.getCredentialsManager() }
+    val fcmTokenManager = remember { FcmTokenManagerProvider.getFcmTokenManager() }
+    val platform = remember { 
+        val platformName = getPlatform().name.lowercase()
+        if (platformName.contains("android")) "android" else "ios"
+    }
     val viewModel: LoginViewModel = viewModel {
         LoginViewModel(AuthModule.loginUseCase)
     }
@@ -231,7 +238,16 @@ fun LoginScreen(
                                 password.isNotBlank()
 
                     Button(
-                        onClick = { viewModel.login(username, password, onLoginSuccess) },
+                        onClick = {
+                            val fcmToken = fcmTokenManager.getToken()
+                            viewModel.login(
+                                username = username,
+                                password = password,
+                                fcmToken = fcmToken,
+                                platform = platform,
+                                onSuccess = onLoginSuccess
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),

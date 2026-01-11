@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.google.services)
 }
 
 kotlin {
@@ -31,6 +32,9 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.android)
+            // Firebase BOM usando enforcedPlatform() como alternativa a platform() deprecado
+            implementation(project.dependencies.enforcedPlatform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -90,4 +94,3 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
-

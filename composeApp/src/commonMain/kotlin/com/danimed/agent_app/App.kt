@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import com.danimed.agent_app.core.auth.presentation.screens.LoginScreen
 import com.danimed.agent_app.core.auth.presentation.screens.SplashScreen
 import com.danimed.agent_app.core.scheduling.presentation.screens.HomeScreen
+import com.danimed.agent_app.getPlatform
 import com.danimed.agent_app.shared.components.BottomNavItem
 import com.danimed.agent_app.shared.components.NoInternetScreen
 import com.danimed.agent_app.shared.networks.NetworkErrorHandler
@@ -19,6 +20,7 @@ import com.danimed.agent_app.shared.di.AuthModule
 import com.danimed.agent_app.shared.navigation.AuthRedirectHandler
 import com.danimed.agent_app.shared.theme.AppTheme
 import com.danimed.agent_app.shared.utils.CredentialsManagerProvider
+import com.danimed.agent_app.shared.utils.FcmTokenManagerProvider
 import com.danimed.agent_app.shared.utils.SplashState
 import com.danimed.agent_app.shared.utils.TokenManagerProvider
 import kotlinx.coroutines.CoroutineScope
@@ -97,6 +99,11 @@ fun App() {
         }
 
         val credentialsManager = remember { CredentialsManagerProvider.getCredentialsManager() }
+        val fcmTokenManager = remember { FcmTokenManagerProvider.getFcmTokenManager() }
+        val platform = remember { 
+            val platformName = getPlatform().name.lowercase()
+            if (platformName.contains("android")) "android" else "ios"
+        }
         var isRelogging by remember { mutableStateOf(false) }
         
         // Manejar re-login automático cuando el token expire
@@ -106,16 +113,20 @@ fun App() {
         
         DisposableEffect(Unit) {
             AuthRedirectHandler.setOnUnauthorizedCallback {
-                if (!isRelogging) {
+                // No intentar re-login automático si es un logout manual
+                if (!isRelogging && !isManualLogout) {
                     isRelogging = true
                     // Intentar re-login automático si hay credenciales guardadas
                     val savedCredentials = credentialsManager.getCredentials()
                     if (savedCredentials != null) {
                         // Intentar re-login en background
                         CoroutineScope(Dispatchers.Default).launch {
+                            val fcmToken = fcmTokenManager.getToken()
                             val result = AuthModule.loginUseCase(
                                 savedCredentials.first,
-                                savedCredentials.second
+                                savedCredentials.second,
+                                fcmToken,
+                                platform
                             )
                             result.onSuccess { newToken ->
                                 tokenManager.saveToken(newToken)
@@ -188,8 +199,9 @@ fun App() {
                     LaunchedEffect(currentScreen, isManualLogout) {
                         if (currentScreen is AppScreen.Login) {
                             if (isManualLogout) {
-                                // Es logout manual, asegurarse de que el token esté limpio
+                                // Es logout manual, asegurarse de que el token y credenciales estén limpios
                                 tokenManager.clearToken()
+                                credentialsManager.clearCredentials()
                                 // Resetear el flag después de un pequeño delay para evitar loops
                                 delay(100)
                                 isManualLogout = false
@@ -219,10 +231,12 @@ fun App() {
                         onNavItemClick = { currentNavItem = it },
                         onLogout = {
                             // Limpiar token y credenciales ANTES de cambiar de pantalla
+                            // Esto asegura que no se pueda hacer re-login automático
                             tokenManager.clearToken()
                             credentialsManager.clearCredentials()
                             // Marcar como logout manual y cambiar de pantalla
                             isManualLogout = true
+                            isRelogging = false // Asegurar que no se intente re-login automático
                             currentScreen = AppScreen.Login
                         }
                     )

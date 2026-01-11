@@ -7,8 +7,17 @@ import com.danimed.agent_app.core.auth.infrastructure.api.AuthApi
 import com.danimed.agent_app.shared.networks.dto.ApiRes
 
 class AuthRemoteDataSource(private val authApi: AuthApi) {
-    suspend fun login(username: String, password: String): Result<String> {
-        return authApi.login(LoginRequest(username, password)).fold(
+    suspend fun login(
+        username: String,
+        password: String,
+        fcmToken: String? = null,
+        platform: String? = null
+    ): Result<String> {
+        return authApi.login(
+            request = LoginRequest(username, password),
+            fcmToken = fcmToken,
+            platform = platform
+        ).fold(
             onSuccess = { apiRes ->
                 if (apiRes.success && apiRes.data != null) {
                     Result.success(apiRes.data.token)

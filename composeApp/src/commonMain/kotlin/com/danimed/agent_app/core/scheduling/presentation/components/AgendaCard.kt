@@ -432,8 +432,9 @@ private fun CardContent(item: AgendaItem) {
                     Spacer(modifier = Modifier.size(2.dp))
 
                     Text(
+                        modifier = Modifier.padding(end = 6.dp),
                         text = item.status,
-                        fontSize = 14.sp,
+                        fontSize = 11.sp,
                         fontFamily = InterFontFamily(),
                         color = Color(0xFFF44336)
                     )
@@ -442,7 +443,7 @@ private fun CardContent(item: AgendaItem) {
                         painter = rememberVectorPainter(image = FeatherIcons.HelpCircle),
                         contentDescription = "Estado desconocido",
                         tint = Color(0xFF666666),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp).padding(end = 6.dp),
                     )
                 }
             }

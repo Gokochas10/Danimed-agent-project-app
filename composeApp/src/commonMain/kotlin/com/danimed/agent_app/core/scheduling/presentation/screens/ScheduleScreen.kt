@@ -1,8 +1,11 @@
 package com.danimed.agent_app.core.scheduling.presentation.screens
 
+import agent_app.composeapp.generated.resources.Res
+import agent_app.composeapp.generated.resources.calendar_add
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -52,10 +56,10 @@ import com.danimed.agent_app.shared.theme.White
 import com.danimed.agent_app.shared.utils.SetStatusBarColor
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Info
-import compose.icons.feathericons.Plus
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
+import org.jetbrains.compose.resources.painterResource as resPainterResource
 
 data class ScheduleBlock(
     val schedule: Schedule,
@@ -177,24 +181,24 @@ fun ScheduleScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 80.dp),
+                .padding(end = 16.dp, bottom = 90.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FloatingActionButton(
                 onClick = { /* TODO: Implement create schedule */ },
-                modifier = Modifier.size(56.dp),
-                containerColor = PrimaryBlue,
+                modifier = Modifier.size(60.dp),
+                containerColor = Color(0xFF4CAF50),
                 elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 6.dp
+                    defaultElevation = 20.dp
                 ),
                 shape = CircleShape
             ) {
-                Icon(
-                    painter = rememberVectorPainter(image = FeatherIcons.Plus),
+                Image(
+                    painter = resPainterResource(Res.drawable.calendar_add),
                     contentDescription = "Crear horario",
-                    tint = White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(30.dp),
+                    colorFilter = ColorFilter.tint(White)
                 )
             }
         }

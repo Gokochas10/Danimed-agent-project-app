@@ -46,6 +46,7 @@ import compose.icons.feathericons.X
 @Composable
 fun SearchScreen(
     onDismiss: () -> Unit,
+    onSearch: (String) -> Unit = {},
     initialClickPosition: Offset? = null,
     modifier: Modifier = Modifier
 ) {
@@ -137,13 +138,15 @@ fun SearchScreen(
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Search
                 ),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        if (uiState.searchQuery.isNotBlank()) {
-                            viewModel.saveSearch(uiState.searchQuery)
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            if (uiState.searchQuery.isNotBlank()) {
+                                viewModel.saveSearch(uiState.searchQuery)
+                                onSearch(uiState.searchQuery)
+                                onDismiss()
+                            }
                         }
-                    }
-                ),
+                    ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = PrimaryBlue,
                     unfocusedTextColor = PrimaryBlue,
@@ -195,6 +198,8 @@ fun SearchScreen(
                                 onClick = {
                                     viewModel.updateSearchQuery(search.query)
                                     viewModel.saveSearch(search.query)
+                                    onSearch(search.query)
+                                    onDismiss()
                                 }
                             )
                         }

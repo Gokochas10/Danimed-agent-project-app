@@ -7,8 +7,14 @@ import com.danimed.agent_app.core.bookings.infrastructure.api.BookingsApi
 import com.danimed.agent_app.shared.networks.dto.ApiRes
 
 class BookingsRemoteDataSource(private val bookingsApi: BookingsApi) {
-    suspend fun getBookings(doctorId: Int, date: String? = null): Result<BookingsResponse> {
-        return bookingsApi.getBookings(doctorId, date).fold(
+    suspend fun getBookings(
+        doctorId: Int, 
+        date: String? = null,
+        search: String? = null,
+        page: Int = 1,
+        limit: Int = 10
+    ): Result<BookingsResponse> {
+        return bookingsApi.getBookings(doctorId, date, search, page, limit).fold(
             onSuccess = { apiRes ->
                 if (apiRes.success && apiRes.data != null) {
                     Result.success(apiRes.data.toDomain())

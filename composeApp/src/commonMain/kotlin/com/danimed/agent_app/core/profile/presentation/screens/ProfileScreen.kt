@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.foundation.clickable
 import com.danimed.agent_app.core.profile.application.viewModel.ProfileViewModel
 import com.danimed.agent_app.core.profile.presentation.components.ProfileHeader
 import com.danimed.agent_app.core.scheduling.presentation.utils.rememberHeaderAlpha
@@ -209,7 +208,7 @@ private fun ProfileHeaderCard(
                 color = SplashBackground,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier
-                    .width(200.dp)
+                    .fillMaxWidth()
                     .placeholder(
                         enabled = isLoading,
                         shape = RoundedCornerShape(4.dp),
@@ -360,7 +359,7 @@ private fun ProfileInfoRow(
                 color = Color(0xFF333333),
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier
-                    .width(150.dp)
+                    .fillMaxWidth()
                     .placeholder(
                         enabled = isLoading,
                         shape = RoundedCornerShape(4.dp),

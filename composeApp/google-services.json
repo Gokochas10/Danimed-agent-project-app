@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "347448387594",
+    "project_id": "danimed-app",
+    "storage_bucket": "danimed-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:347448387594:android:73b9000feeed4f94de97f3",
+        "android_client_info": {
+          "package_name": "com.danimed.agent_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2glYxudqHVlrfI4mUxEme2kxjc4yLjLg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
