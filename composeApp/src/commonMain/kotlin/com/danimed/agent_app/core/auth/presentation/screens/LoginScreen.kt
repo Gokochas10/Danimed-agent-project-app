@@ -46,8 +46,10 @@ import com.danimed.agent_app.shared.theme.LoginBackground
 import com.danimed.agent_app.shared.theme.PrimaryBlue
 import com.danimed.agent_app.shared.theme.SplashBackground
 import com.danimed.agent_app.shared.theme.White
+import com.danimed.agent_app.shared.networks.NetworkErrorHandler
 import com.danimed.agent_app.shared.utils.CredentialsManagerProvider
 import com.danimed.agent_app.shared.utils.FcmTokenManagerProvider
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun LoginScreen(
@@ -65,6 +67,17 @@ fun LoginScreen(
     }
     val viewModel: LoginViewModel = viewModel {
         LoginViewModel(AuthModule.loginUseCase)
+    }
+    
+    // Observar cuando se limpian los errores de red/servidor para limpiar también el error de login
+    val hasNoInternet by NetworkErrorHandler.hasNoInternet.collectAsState()
+    val hasServerError by NetworkErrorHandler.hasServerError.collectAsState()
+    
+    LaunchedEffect(hasNoInternet, hasServerError) {
+        // Cuando se limpian los errores de red/servidor (ambos son false), limpiar el error de login
+        if (!hasNoInternet && !hasServerError) {
+            viewModel.clearError()
+        }
     }
     
     // Cargar credenciales guardadas si existen

@@ -15,7 +15,9 @@ import com.danimed.agent_app.core.scheduling.presentation.screens.HomeScreen
 import com.danimed.agent_app.getPlatform
 import com.danimed.agent_app.shared.components.BottomNavItem
 import com.danimed.agent_app.shared.components.NoInternetScreen
+import com.danimed.agent_app.shared.components.ServerErrorScreen
 import com.danimed.agent_app.shared.networks.NetworkErrorHandler
+import com.danimed.agent_app.shared.utils.NetworkConnectivityManagerProvider
 import com.danimed.agent_app.shared.di.AuthModule
 import com.danimed.agent_app.shared.navigation.AuthRedirectHandler
 import com.danimed.agent_app.shared.theme.AppTheme
@@ -28,11 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import io.ktor.client.HttpClient
-import io.ktor.client.request.head
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.withContext
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Función expect para precargar video (solo implementada en Android)
@@ -55,8 +52,28 @@ fun App() {
 
         // La precarga del video se hace en MainActivity (Android) o equivalente en iOS
 
-        // Observar el estado de conexión a internet
+        // Inicializar NetworkConnectivityManagerProvider si no está inicializado
+        LaunchedEffect(Unit) {
+            NetworkConnectivityManagerProvider.init()
+        }
+        
+        val connectivityManager = remember { NetworkConnectivityManagerProvider.getNetworkConnectivityManager() }
+        
+        // Iniciar monitoreo de conectividad
+        LaunchedEffect(Unit) {
+            connectivityManager.startMonitoring()
+        }
+        
+        DisposableEffect(Unit) {
+            onDispose {
+                connectivityManager.stopMonitoring()
+            }
+        }
+
+        // Observar el estado de conexión a internet y errores de servidor
         val hasNoInternet by NetworkErrorHandler.hasNoInternet.collectAsState()
+        val hasServerError by NetworkErrorHandler.hasServerError.collectAsState()
+        val isConnected by connectivityManager.isConnected.collectAsState()
 
         val initialScreen = remember {
             if (SplashState.hasShownSplash()) {
@@ -70,7 +87,9 @@ fun App() {
         var currentScreen by remember { mutableStateOf<AppScreen>(initialScreen) }
         var splashShown by remember { mutableStateOf(SplashState.hasShownSplash()) }
         var videoKey by remember { mutableIntStateOf(0) }
+        var serverErrorVideoKey by remember { mutableIntStateOf(0) }
         var lastNoInternetState by remember { mutableStateOf(false) }
+        var lastServerErrorState by remember { mutableStateOf(false) }
         var lastScreen by remember { mutableStateOf<AppScreen?>(null) }
         var isManualLogout by remember { mutableStateOf(false) }
 
@@ -96,6 +115,17 @@ fun App() {
             }
             
             lastScreen = currentScreen
+        }
+        
+        // Incrementar serverErrorVideoKey cada vez que aparece la pantalla de error de servidor
+        LaunchedEffect(hasServerError, splashShown) {
+            val shouldShowServerError = hasServerError && splashShown
+            
+            if (shouldShowServerError && !lastServerErrorState) {
+                serverErrorVideoKey++
+            }
+            
+            lastServerErrorState = shouldShowServerError
         }
 
         val credentialsManager = remember { CredentialsManagerProvider.getCredentialsManager() }
@@ -162,23 +192,36 @@ fun App() {
             }
         }
 
-        // Mostrar pantalla de no internet si no hay conexión
-        if (hasNoInternet && splashShown) {
+        // Mostrar pantalla de error de servidor si hay error del servidor
+        // Mostrar incluso durante splash si hay error
+        if (hasServerError) {
+            ServerErrorScreen(
+                onRetry = {
+                    // Limpiar el estado de error de servidor
+                    NetworkErrorHandler.clearServerError()
+                    // Si aún no se ha mostrado el splash, marcarlo como mostrado para continuar
+                    if (!splashShown) {
+                        splashShown = true
+                    }
+                },
+                videoKey = serverErrorVideoKey
+            )
+        }
+        // Mostrar pantalla de no internet si no hay conexión (solo si no hay error de servidor)
+        // Mostrar incluso durante splash si hay error
+        else if (hasNoInternet) {
             NoInternetScreen(
                 onRetry = {
                     // Limpiar el estado de no internet
                     NetworkErrorHandler.clearNoInternet()
+                    // Si aún no se ha mostrado el splash, marcarlo como mostrado para continuar
+                    if (!splashShown) {
+                        splashShown = true
+                    }
                 },
                 checkInternetConnection = {
-                    // Verificar conexión a internet usando Ktor
-                    withContext(Dispatchers.IO) {
-                        try {
-                            val response: HttpResponse = httpClient.head("https://www.google.com")
-                            response.status == HttpStatusCode.OK
-                        } catch (e: Exception) {
-                            false
-                        }
-                    }
+                    // Verificar conexión usando NetworkConnectivityManager (no hace fetch)
+                    connectivityManager.hasInternetConnection()
                 },
                 videoKey = videoKey
             )

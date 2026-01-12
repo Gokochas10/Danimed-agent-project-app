@@ -10,31 +10,26 @@ sealed class NetworkError : Exception() {
 fun Throwable.toNetworkError(): NetworkError {
     val error = when {
         this is NetworkError -> this
-        // Errores de conexión (no hay internet) - estos son errores de red reales
+        // Errores que definitivamente indican falta de conexión a internet
+        // (no se puede resolver el host, no hay red disponible)
         message?.contains("Unable to resolve host", ignoreCase = true) == true ||
-        message?.contains("Failed to connect", ignoreCase = true) == true ||
-        message?.contains("Network is unreachable", ignoreCase = true) == true ||
         message?.contains("No address associated with hostname", ignoreCase = true) == true ||
+        message?.contains("Network is unreachable", ignoreCase = true) == true ||
         message?.contains("Network unreachable", ignoreCase = true) == true ||
-        message?.contains("No route to host", ignoreCase = true) == true ||
-        message?.contains("Connection timed out", ignoreCase = true) == true ||
-        message?.contains("Network error", ignoreCase = true) == true ||
-        // Errores de timeout que indican falta de conexión
-        (message?.contains("SocketTimeoutException", ignoreCase = true) == true && 
-         message?.contains("timeout", ignoreCase = true) == true) ||
-        (message?.contains("ConnectTimeoutException", ignoreCase = true) == true) -> {
+        message?.contains("No route to host", ignoreCase = true) == true -> {
             NetworkError.NoConnection()
         }
-        // Connection refused puede ser tanto falta de internet como servidor caído
-        // Si viene de un HttpRequestTimeout o similar, es más probable que sea servidor
-        message?.contains("Connection refused", ignoreCase = true) == true -> {
-            // Si es un timeout de HTTP, probablemente es servidor
-            if (message?.contains("HTTP", ignoreCase = true) == true ||
-                message?.contains("Request", ignoreCase = true) == true) {
-                NetworkError.ServerError(0, message ?: "Error del servidor")
-            } else {
-                NetworkError.NoConnection()
-            }
+        // Errores que pueden ser tanto falta de internet como servidor caído
+        // Estos se clasificarán correctamente en NetworkErrorHandler usando NetworkConnectivityManager
+        message?.contains("Failed to connect", ignoreCase = true) == true ||
+        message?.contains("Connection refused", ignoreCase = true) == true ||
+        message?.contains("Connection timed out", ignoreCase = true) == true ||
+        message?.contains("Network error", ignoreCase = true) == true ||
+        (message?.contains("SocketTimeoutException", ignoreCase = true) == true) ||
+        (message?.contains("ConnectTimeoutException", ignoreCase = true) == true) -> {
+            // Clasificar como Unknown primero, luego NetworkErrorHandler verificará la conexión
+            // y lo clasificará correctamente como NoConnection o ServerError
+            NetworkError.Unknown(message ?: "Error de conexión", this)
         }
         // Errores de servidor (servidor caído, URL incorrecta, etc.) - estos son errores HTTP
         message?.contains("HTTP", ignoreCase = true) == true ||

@@ -18,6 +18,7 @@ import com.danimed.agent_app.shared.components.VideoPreloader
 import com.danimed.agent_app.shared.notifications.NotificationManager
 import com.danimed.agent_app.shared.utils.CredentialsManagerProvider
 import com.danimed.agent_app.shared.utils.FcmTokenManagerProvider
+import com.danimed.agent_app.shared.utils.NetworkConnectivityManagerProvider
 import com.danimed.agent_app.shared.utils.NotificationsLocalManagerProvider
 import com.danimed.agent_app.shared.utils.RecentSearchesManagerProvider
 import com.danimed.agent_app.shared.utils.TokenManagerProvider
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
         CredentialsManagerProvider.init(this)
         FcmTokenManagerProvider.init(this)
         NotificationsLocalManagerProvider.init(this)
+        NetworkConnectivityManagerProvider.init(this)
 
         checkAndRequestNotificationPermission()
         
@@ -54,11 +56,12 @@ class MainActivity : ComponentActivity() {
         handleNotificationIntent(intent)
 
         setContent {
-            // Precargar el video de no internet
+            // Precargar los videos de error
             val context = LocalContext.current
             LaunchedEffect(Unit) {
                 GlobalScope.launch {
                     VideoPreloader.preloadVideo(context, "no_connection")
+                    VideoPreloader.preloadVideo(context, "internal_server_error")
                 }
             }
             

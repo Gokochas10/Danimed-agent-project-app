@@ -58,12 +58,19 @@ import com.danimed.agent_app.shared.theme.SplashBackground
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import com.danimed.agent_app.shared.theme.White
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun AgendaCard(
     item: AgendaItem,
+    serverDate: kotlinx.datetime.LocalDate? = null,
     onEditClick: (AgendaItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -150,6 +157,7 @@ fun AgendaCard(
             ) {
                 EditForm(
                     item = item,
+                    serverDate = serverDate,
                     onSave = {
                         onEditClick(item)
                         showEditDialog = false
@@ -450,9 +458,11 @@ private fun CardContent(item: AgendaItem) {
         }
     }
 }
+@OptIn(ExperimentalTime::class)
 @Composable
 private fun EditForm(
     item: AgendaItem,
+    serverDate: kotlinx.datetime.LocalDate? = null,
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -574,45 +584,57 @@ private fun EditForm(
                             .padding(10.dp)
                     )
 
-                    // Campo de tiempo
-                    Text(
-                        text = "Horario",
-                        fontSize = 14.sp,
-                        fontFamily = InterFontFamily(),
-                        color = SplashBackground,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                    Text(
-                        text = item.time,
-                        fontSize = 12.sp,
-                        fontFamily = InterFontFamily(),
-                        color = SplashBackground,
+                    // Campo de tiempo y duración en la misma fila
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                            .padding(10.dp)
-                    )
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(0.60f)
+                        ) {
+                            Text(
+                                text = "Horario",
+                                fontSize = 14.sp,
+                                fontFamily = InterFontFamily(),
+                                color = SplashBackground,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Text(
+                                text = item.time,
+                                fontSize = 12.sp,
+                                fontFamily = InterFontFamily(),
+                                color = SplashBackground,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                                    .padding(10.dp)
+                            )
+                        }
 
-                    // Campo de duración
-                    Text(
-                        text = "Duración",
-                        fontSize = 14.sp,
-                        fontFamily = InterFontFamily(),
-                        color = SplashBackground,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                    Text(
-                        text = item.duration,
-                        fontSize = 12.sp,
-                        fontFamily = InterFontFamily(),
-                        color = SplashBackground,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                            .padding(10.dp)
-                    )
+                        Column(
+                            modifier = Modifier.weight(0.4f)
+                        ) {
+                            Text(
+                                text = "Duración",
+                                fontSize = 14.sp,
+                                fontFamily = InterFontFamily(),
+                                color = SplashBackground,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Text(
+                                text = item.duration,
+                                fontSize = 12.sp,
+                                fontFamily = InterFontFamily(),
+                                color = SplashBackground,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                                    .padding(10.dp)
+                            )
+                        }
+                    }
 
                     // Campo de estado
                     Text(
@@ -666,19 +688,60 @@ private fun EditForm(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Determinar si la cita es pasada comparando fecha y hora
+                        val isPastAppointment = remember(item.date, item.startTime, serverDate) {
+                            serverDate?.let { server ->
+                                // Comparar fecha primero
+                                when {
+                                    item.date < server -> true // Fecha pasada
+                                    item.date > server -> false // Fecha futura
+                                    else -> {
+                                        // Misma fecha, comparar hora
+                                        // Parsear hora de inicio (formato: "10:00am")
+                                        val timeParts = item.startTime.replace("am", "").replace("pm", "").split(":")
+                                        if (timeParts.size >= 2) {
+                                            val hour = timeParts[0].toIntOrNull() ?: 0
+                                            val minute = timeParts[1].toIntOrNull() ?: 0
+                                            val isPm = item.startTime.contains("pm", ignoreCase = true)
+                                            val hour24 = when {
+                                                isPm && hour != 12 -> hour + 12
+                                                !isPm && hour == 12 -> 0
+                                                else -> hour
+                                            }
+                                            
+                                            // Obtener hora actual del sistema (asumiendo que serverDate es la fecha actual del servidor)
+                                            val now = kotlinx.datetime.Clock.System.now()
+                                            val timeZone = kotlinx.datetime.TimeZone.currentSystemDefault()
+                                            val localDateTime = now.toLocalDateTime(timeZone)
+                                            
+                                            // Comparar hora
+                                            val appointmentHour = hour24 * 60 + minute
+                                            val currentHourMinutes = localDateTime.hour * 60 + localDateTime.minute
+                                            appointmentHour < currentHourMinutes
+                                        } else {
+                                            false
+                                        }
+                                    }
+                                }
+                            } ?: false
+                        }
+                        
                         Button(
                             onClick = {
                                 // TODO: Implementar lógica de reagendar
                             },
+                            enabled = !isPastAppointment,
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = SplashBackground
+                                containerColor = SplashBackground,
+                                disabledContainerColor = Color(0xFFCCCCCC),
+                                disabledContentColor = Color(0xFF999999)
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
                                 text = "Reagendar Cita",
-                                color = Color.White,
+                                color = if (isPastAppointment) Color(0xFF999999) else Color.White,
                                 fontFamily = InterFontFamily(),
                                 fontSize = 16.sp
                             )
@@ -690,13 +753,13 @@ private fun EditForm(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFE0E0E0)
+                                containerColor = Color(0xFF4CAF50)
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
                                 text = "Ver Historial de Cita",
-                                color = Color(0xFF666666),
+                                color = White,
                                 fontFamily = InterFontFamily(),
                                 fontSize = 16.sp
                             )

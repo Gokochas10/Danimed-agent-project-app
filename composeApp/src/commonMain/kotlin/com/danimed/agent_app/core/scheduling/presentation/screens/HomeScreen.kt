@@ -396,6 +396,7 @@ private fun AgendaScreen(
                         items(agendaItems) { item ->
                             AgendaCard(
                                 item = item,
+                                serverDate = uiState.serverDate?.let { parseDateString(it) },
                                 onEditClick = { editedItem ->
                                     // Aquí puedes manejar la edición
                                     println("Editing: ${editedItem.title}")

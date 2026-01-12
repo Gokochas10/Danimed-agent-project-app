@@ -50,8 +50,23 @@ fun WeekSelector(
     val today = currentLocalDate()
     
     val weekDays = remember(selectedDate) {
-        val startOfWeek = getStartOfWeek(selectedDate)
-        (0..6).map { dayOffset ->
+        // Obtener el primer día del mes de la fecha seleccionada
+        val firstDayOfMonth = LocalDate(selectedDate.year, selectedDate.month, 1)
+        
+        // Obtener el último día del mes
+        val lastDayOfMonth = getLastDayOfMonth(selectedDate.year, selectedDate.month)
+        
+        // Obtener el lunes de la semana que contiene el primer día del mes
+        val startOfWeek = getStartOfWeek(firstDayOfMonth)
+        
+        // Obtener el domingo de la semana que contiene el último día del mes
+        val endOfWeek = getEndOfWeek(lastDayOfMonth)
+        
+        // Calcular el número de días entre el lunes inicial y el domingo final
+        val totalDays = getDaysBetween(startOfWeek, endOfWeek)
+        
+        // Generar todos los días del mes (desde el lunes inicial hasta el domingo final)
+        (0..totalDays).map { dayOffset ->
             val date = addDays(startOfWeek, dayOffset)
             WeekDay(
                 date = date,
@@ -152,6 +167,40 @@ private fun getStartOfWeek(date: LocalDate): LocalDate {
     }
     
     return subtractDays(date, daysToSubtract)
+}
+
+private fun getEndOfWeek(date: LocalDate): LocalDate {
+    val dayOfWeek = date.dayOfWeek
+    val daysToAdd = when (dayOfWeek) {
+        DayOfWeek.MONDAY -> 6
+        DayOfWeek.TUESDAY -> 5
+        DayOfWeek.WEDNESDAY -> 4
+        DayOfWeek.THURSDAY -> 3
+        DayOfWeek.FRIDAY -> 2
+        DayOfWeek.SATURDAY -> 1
+        DayOfWeek.SUNDAY -> 0
+    }
+    
+    return addDays(date, daysToAdd)
+}
+
+private fun getLastDayOfMonth(year: Int, month: kotlinx.datetime.Month): LocalDate {
+    val daysInMonth = getDaysInMonth(month, year)
+    return LocalDate(year, month, daysInMonth)
+}
+
+private fun getDaysBetween(startDate: LocalDate, endDate: LocalDate): Int {
+    var count = 0
+    var currentDate = startDate
+    while (currentDate <= endDate) {
+        count++
+        if (currentDate < endDate) {
+            currentDate = addDays(currentDate, 1)
+        } else {
+            break
+        }
+    }
+    return count - 1 // -1 porque queremos el número de días entre, no incluyendo el último
 }
 
 private fun subtractDays(date: LocalDate, days: Int): LocalDate {
