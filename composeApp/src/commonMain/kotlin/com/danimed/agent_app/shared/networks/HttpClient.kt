@@ -37,8 +37,7 @@ fun createHttpClient(): HttpClient {
             validateResponse { response ->
                 when {
                     response.status == HttpStatusCode.Unauthorized -> {
-                        val tokenManager = TokenManagerProvider.getTokenManager()
-                        tokenManager.clearToken()
+                        // No limpiar el token aquí, dejar que App.kt maneje el re-login automático
                         AuthRedirectHandler.notifyUnauthorized()
                     }
                     response.status.value >= 500 -> {
@@ -67,6 +66,7 @@ fun createHttpClient(): HttpClient {
             handleResponseException { cause ->
                 // Convertir la excepción a NetworkError y manejarla
                 val networkError = cause.toNetworkError()
+                // Manejar todos los tipos de errores de red
                 when (networkError) {
                     is NetworkError.NoConnection -> {
                         // Error de conexión (no hay internet)
@@ -76,8 +76,13 @@ fun createHttpClient(): HttpClient {
                         // Error de servidor que no fue capturado por validateResponse
                         NetworkErrorHandler.handleNetworkError(networkError)
                     }
+                    is NetworkError.Unknown -> {
+                        // Errores desconocidos que pueden ser de conexión o servidor
+                        // NetworkErrorHandler verificará la conexión y los clasificará correctamente
+                        NetworkErrorHandler.handleNetworkError(networkError)
+                    }
                     else -> {
-                        // Otros errores no se manejan aquí
+                        // Otros errores (como Unauthorized) no se manejan aquí
                     }
                 }
                 // No relanzar la excepción aquí - se maneja en el código que hace la llamada

@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import com.danimed.agent_app.core.profile.application.viewModel.ProfileViewModel
 import com.danimed.agent_app.core.profile.presentation.components.ProfileHeader
 import com.danimed.agent_app.core.scheduling.presentation.utils.rememberHeaderAlpha
@@ -42,7 +44,8 @@ import compose.icons.feathericons.*
 @Composable
 fun ProfileScreen(
     currentNavItem: BottomNavItem = BottomNavItem.Schedule,
-    onNavItemClick: (BottomNavItem) -> Unit = {}
+    onNavItemClick: (BottomNavItem) -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     SetStatusBarColor(PrimaryBlue)
     
@@ -136,7 +139,8 @@ fun ProfileScreen(
                     // Información del perfil
                     ProfileInfoCard(
                         profile = uiState.profile,
-                        isLoading = uiState.isLoading
+                        isLoading = uiState.isLoading,
+                        onLogout = onLogout
                     )
                 }
             }
@@ -204,7 +208,7 @@ private fun ProfileHeaderCard(
                 color = SplashBackground,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier
-                    .width(200.dp)
+                    .fillMaxWidth()
                     .placeholder(
                         enabled = isLoading,
                         shape = RoundedCornerShape(4.dp),
@@ -242,7 +246,8 @@ private fun ProfileHeaderCard(
 @Composable
 private fun ProfileInfoCard(
     profile: com.danimed.agent_app.core.profile.domain.model.Profile?,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onLogout: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -297,6 +302,14 @@ private fun ProfileInfoCard(
                 value = profile?.role ?: "",
                 isLoading = isLoading
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Logout button
+            LogoutButton(
+                onLogout = onLogout,
+                isLoading = isLoading
+            )
         }
     }
 }
@@ -346,12 +359,49 @@ private fun ProfileInfoRow(
                 color = Color(0xFF333333),
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier
-                    .width(150.dp)
+                    .fillMaxWidth()
                     .placeholder(
                         enabled = isLoading,
                         shape = RoundedCornerShape(4.dp),
                         highlight = PlaceholderDefaults.shimmer
                     )
+            )
+        }
+    }
+}
+
+@Composable
+private fun LogoutButton(
+    onLogout: () -> Unit,
+    isLoading: Boolean
+) {
+    Button(
+        onClick = onLogout,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        enabled = !isLoading,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFF44336)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                painter = rememberVectorPainter(image = FeatherIcons.LogOut),
+                contentDescription = null,
+                tint = White,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = "Cerrar Sesión",
+                fontSize = 16.sp,
+                fontFamily = InterFontFamily(),
+                fontWeight = FontWeight.SemiBold,
+                color = White
             )
         }
     }

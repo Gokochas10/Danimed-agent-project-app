@@ -22,11 +22,17 @@ class LoginViewModel(
     var uiState by mutableStateOf(LoginUiState())
         private set
 
-    fun login(username: String, password: String, onSuccess: (String) -> Unit) {
+    fun login(
+        username: String,
+        password: String,
+        fcmToken: String? = null,
+        platform: String? = null,
+        onSuccess: (String) -> Unit
+    ) {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, error = null, isSuccess = false, token = null)
             
-            loginUseCase(username, password)
+            loginUseCase(username, password, fcmToken, platform)
                 .onSuccess { token ->
                     uiState = uiState.copy(isLoading = false, isSuccess = true, token = token)
                     onSuccess(token)

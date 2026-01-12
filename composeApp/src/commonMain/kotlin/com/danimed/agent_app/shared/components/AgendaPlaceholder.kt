@@ -43,7 +43,7 @@ fun AgendaPlaceholder(
 }
 
 @Composable
-private fun AgendaCardPlaceholder() {
+fun AgendaCardPlaceholder() {
     Card(
         modifier = Modifier
             .fillMaxWidth()

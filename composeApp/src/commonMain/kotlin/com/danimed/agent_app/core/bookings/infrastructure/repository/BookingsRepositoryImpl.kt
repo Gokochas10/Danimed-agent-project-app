@@ -8,8 +8,14 @@ import com.danimed.agent_app.core.bookings.infrastructure.datasource.remote.Book
 class BookingsRepositoryImpl(
     private val remoteDataSource: BookingsRemoteDataSource
 ) : BookingsRepository {
-    override suspend fun getBookings(doctorId: Int, date: String?): Result<BookingsResponse> {
-        return remoteDataSource.getBookings(doctorId, date)
+    override suspend fun getBookings(
+        doctorId: Int, 
+        date: String?,
+        search: String?,
+        page: Int,
+        limit: Int
+    ): Result<BookingsResponse> {
+        return remoteDataSource.getBookings(doctorId, date, search, page, limit)
     }
 
     override suspend fun getBookingEvents(bookingId: Int): Result<List<BookingEvent>> {

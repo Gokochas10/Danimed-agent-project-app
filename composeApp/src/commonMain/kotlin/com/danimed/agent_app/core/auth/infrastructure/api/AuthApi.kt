@@ -20,11 +20,18 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 
 class AuthApi(private val httpClient: HttpClient) {
-    suspend fun login(request: LoginRequest): Result<ApiRes<LoginResponse>> {
+    suspend fun login(
+        request: LoginRequest,
+        fcmToken: String? = null,
+        platform: String? = null
+    ): Result<ApiRes<LoginResponse>> {
         return try {
             val response = httpClient.post("${AppConfig.API_BASE_URL}/api/v1/auth/login") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
+                // Agregar headers fcm-token y platform si están disponibles
+                fcmToken?.let { header("fcm-token", it) }
+                platform?.let { header("platform", it) }
             }
             val body = response.body<ApiRes<LoginResponse>>()
             Result.success(body)

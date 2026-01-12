@@ -7,8 +7,13 @@ import com.danimed.agent_app.core.auth.infrastructure.datasource.remote.AuthRemo
 class AuthRepositoryImpl(
     private val remoteDataSource: AuthRemoteDataSource
 ) : AuthRepository {
-    override suspend fun login(username: String, password: String): Result<String> {
-        return remoteDataSource.login(username, password)
+    override suspend fun login(
+        username: String,
+        password: String,
+        fcmToken: String?,
+        platform: String?
+    ): Result<String> {
+        return remoteDataSource.login(username, password, fcmToken, platform)
     }
 
     override suspend fun getCurrentUser(token: String): Result<User> {
